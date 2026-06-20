@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SupplyPrescript — Project Presentation</title>
+<style>
+  :root {
+    --ink: #1c2430;
+    --paper: #f7f5f0;
+    --accent: #2f6f5e;
+    --accent-soft: #e3efe9;
+    --warn: #a4462f;
+    --muted: #5b6472;
+    --border: #d8d3c8;
+    --slide-pad: clamp(2rem, 5vw, 4.5rem);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0f141c;
+    color: var(--ink);
+    font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  }
+  .deck {
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+  .slide {
+    display: none;
+    height: 100%;
+    padding: var(--slide-pad);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #dfece6 0%, transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, #ebe4d6 0%, transparent 50%),
+      var(--paper);
+    flex-direction: column;
+    justify-content: center;
+  }
+  .slide.active { display: flex; }
+  .slide.title-slide {
+    background:
+      linear-gradient(135deg, #1c2430 0%, #243d36 55%, #2f6f5e 100%);
+    color: #f7f5f0;
+  }
+  .slide.title-slide .eyebrow { color: #b7d4c8; }
+  .slide.title-slide h1 { color: #fff; border: none; padding: 0; }
+  .slide.title-slide .subtitle { color: #d7e6df; max-width: 38rem; }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin: 0 0 0.75rem;
+    font-weight: 600;
+  }
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1.08;
+    margin: 0 0 1rem;
+    letter-spacing: -0.03em;
+  }
+  h2 {
+    font-size: clamp(1.7rem, 3.5vw, 2.5rem);
+    margin: 0 0 1.25rem;
+    letter-spacing: -0.02em;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 0.45rem;
+    display: inline-block;
+  }
+  h3 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+  p, li { font-size: clamp(1.05rem, 1.6vw, 1.3rem); line-height: 1.45; }
+  .subtitle { font-size: 1.25rem; margin: 0; max-width: 40rem; }
+  .muted { color: var(--muted); }
+  ul { margin: 0.5rem 0 0; padding-left: 1.2rem; }
+  li { margin: 0.4rem 0; }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.85rem;
+    margin-top: 1rem;
+  }
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+  }
+  .card.accent { border-left: 4px solid var(--accent); }
+  .card.warn { border-left: 4px solid var(--warn); }
+  .metric {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+  }
+  .metric-label { color: var(--muted); font-size: 0.95rem; }
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
+    margin-top: 1.25rem;
+  }
+  .flow .step {
+    background: var(--ink);
+    color: white;
+    padding: 0.55rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .flow .arrow { color: var(--muted); font-weight: 700; }
+  .figure {
+    max-width: 100%;
+    max-height: 52vh;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+  }
+  .figure-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    align-items: start;
+  }
+  .figure-row img { width: 100%; max-height: 42vh; object-fit: contain; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+    background: white;
+    font-size: 1.05rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--muted); font-weight: 600; }
+  .footer-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 1.25rem;
+    background: rgba(28, 36, 48, 0.92);
+    color: #d7dde5;
+    font-size: 0.85rem;
+    z-index: 20;
+  }
+  .footer-bar button {
+    background: transparent;
+    border: 1px solid #6a7380;
+    color: #fff;
+    border-radius: 4px;
+    padding: 0.25rem 0.65rem;
+    cursor: pointer;
+  }
+  .footer-bar button:hover { background: #2f6f5e; border-color: #2f6f5e; }
+  .kbd { opacity: 0.75; }
+  .tag {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .big-quote {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 600;
+    max-width: 34rem;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .stack { display: flex; flex-direction: column; gap: 0.75rem; }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4, .figure-row { grid-template-columns: 1fr; }
+    .figure { max-height: 38vh; }
+  }
+  @media print {
+    .footer-bar { display: none; }
+    .slide { display: flex !important; page-break-after: always; height: 100vh; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide title-slide active" data-title="Title">
+    <p class="eyebrow">Axlero Solutions · Data Analytics · Project 3</p>
+    <h1>SupplyPrescript</h1>
+    <p class="subtitle">Closed-loop analytics for supply-chain delays: predict the risk, prescribe the action, measure whether it worked, and retrain when the world changes.</p>
+    <p style="margin-top:2rem;opacity:0.85">Predictive → Prescriptive → Write-back → True ROI → Outcome-aware retrain</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide" data-title="Agenda">
+    <p class="eyebrow">Agenda</p>
+    <h2>What we will cover</h2>
+    <div class="grid-2">
+      <div class="stack">
+        <div class="card accent"><h3>1. The business problem</h3><p class="muted">Why late shipments hurt — and why reacting too late is expensive.</p></div>
+        <div class="card accent"><h3>2. Solution & architecture</h3><p class="muted">The full closed loop in plain English.</p></div>
+        <div class="card accent"><h3>3. Week-by-week build</h3><p class="muted">Data → Model → Optimizer → API → Retrain.</p></div>
+      </div>
+      <div class="stack">
+        <div class="card accent"><h3>4. Live demo path</h3><p class="muted">Submit a shipment, pick an option, close the loop.</p></div>
+        <div class="card accent"><h3>5. Results & skills</h3><p class="muted">Metrics, tools, and what this proves.</p></div>
+        <div class="card accent"><h3>6. Q&amp;A</h3><p class="muted">Questions welcome at the end.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide" data-title="Problem">
+    <p class="eyebrow">The problem</p>
+    <h2>We find out too late</h2>
+    <p class="big-quote">“A supply-chain team often learns a shipment will be late <em>after</em> it is already late.”</p>
+    <div class="grid-3" style="margin-top:1.5rem">
+      <div class="card warn"><h3>Reactive mode</h3><p>Expedite everything under panic — cost spikes.</p></div>
+      <div class="card warn"><h3>No options view</h3><p>Managers lack clear trade-offs: speed vs cost vs delay.</p></div>
+      <div class="card warn"><h3>No learning</h3><p>Outcomes are not fed back, so forecasts do not improve.</p></div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide" data-title="Solution">
+    <p class="eyebrow">The solution</p>
+    <h2>One closed analytics loop</h2>
+    <div class="flow">
+      <span class="step">1. Predict</span><span class="arrow">→</span>
+      <span class="step">2. Prescribe</span><span class="arrow">→</span>
+      <span class="step">3. Act / write-back</span><span class="arrow">→</span>
+      <span class="step">4. Log outcome</span><span class="arrow">→</span>
+      <span class="step">5. Retrain if drift</span>
+    </div>
+    <div class="grid-2" style="margin-top:1.5rem">
+      <div class="card">
+        <h3>Predictive</h3>
+        <p>Will this shipment be late? By how many days?</p>
+      </div>
+      <div class="card">
+        <h3>Prescriptive</h3>
+        <p>What should we <strong>do</strong>? Four concrete options with cost & delay.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide" data-title="Options">
+    <p class="eyebrow">Prescriptive options</p>
+    <h2>Four ways to respond</h2>
+    <div class="grid-4">
+      <div class="card accent"><h3>A · Air freight</h3><p>Fastest. Highest cost.</p></div>
+      <div class="card accent"><h3>B · Secondary supplier</h3><p>Medium cost / medium delay.</p></div>
+      <div class="card accent"><h3>C · Delay launch</h3><p>Cheapest. Accept the slip.</p></div>
+      <div class="card accent"><h3>D · Optimizer split</h3><p>PuLP mixes A/B/C under budget & max delay.</p></div>
+    </div>
+    <p class="muted" style="margin-top:1.25rem">Managers still choose — the system recommends, it does not auto-book freight.</p>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide" data-title="Architecture">
+    <p class="eyebrow">Architecture</p>
+    <h2>How the pieces connect</h2>
+    <table>
+      <thead><tr><th>Week</th><th>Component</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Mock data + EDA + XGBoost</td><td>Learn delay risk from history</td></tr>
+        <tr><td>2</td><td>Cost formulas + PuLP + UI</td><td>Turn prediction into options</td></tr>
+        <tr><td>3</td><td>FastAPI + decisions DB</td><td>Write-back, outcomes, true ROI</td></tr>
+        <tr><td>4</td><td>Retrain trigger</td><td>If drift is high, refit the model</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top:1rem">Stack: Python · pandas · scikit-learn · XGBoost · PuLP · FastAPI · SQLAlchemy · SQLite/Postgres</p>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide" data-title="Week 1 data">
+    <p class="eyebrow">Week 1 · Data</p>
+    <h2>What the history looks like</h2>
+    <div class="grid-3">
+      <div class="card"><div class="metric">4,000</div><div class="metric-label">mock shipments</div></div>
+      <div class="card"><div class="metric">5</div><div class="metric-label">suppliers / regions</div></div>
+      <div class="card"><div class="metric">45.8%</div><div class="metric-label">late &gt; 3 days</div></div>
+    </div>
+    <ul>
+      <li>Peak season (Nov–Dec) adds delay</li>
+      <li>Supplier shocks (e.g. Delta Cove) create learnable patterns</li>
+      <li>Features: distance, lead time, quantity, unit cost, peak flag, supplier, region, SKU</li>
+    </ul>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide" data-title="EDA charts">
+    <p class="eyebrow">Week 1 · EDA</p>
+    <h2>Evidence before modeling</h2>
+    <div class="figure-row">
+      <img class="figure" src="../figures/delay_distribution.png" alt="Delay distribution" />
+      <img class="figure" src="../figures/delay_by_supplier.png" alt="Delay by supplier" />
+    </div>
+    <p class="muted">Left: delay distribution + 3-day late threshold. Right: mean delay by supplier.</p>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide" data-title="Peak season">
+    <p class="eyebrow">Week 1 · Insight</p>
+    <h2>Peak season is a real driver</h2>
+    <img class="figure" src="../figures/peak_season_effect.png" alt="Peak season effect" />
+    <p class="muted" style="margin-top:0.75rem">Off-peak mean ~2.7 days vs peak ~5.5 days — so <span class="tag">is_peak_season</span> must be in the model.</p>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide" data-title="Model">
+    <p class="eyebrow">Week 1 · Predictive model</p>
+    <h2>Two models, one feature set</h2>
+    <div class="grid-2">
+      <div class="card accent">
+        <h3>Classifier</h3>
+        <p>Probability the delay is meaningful (&gt; 3 days).</p>
+        <p><strong>Temporal AUC</strong> <span style='opacity:.75'>(synthetic)</span></p>
+      </div>
+      <div class="card accent">
+        <h3>Regressor</h3>
+        <p>Expected delay in days.</p>
+        <p><strong>MAE vs supplier baseline</strong> <span style="opacity:.75">(synthetic temporal holdout)</span></p>
+      </div>
+    </div>
+    <p style="margin-top:1rem">Why both? “85% chance of a moderate delay” and “guaranteed 1-day slip” need different prescriptions.</p>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide" data-title="Week 2">
+    <p class="eyebrow">Week 2 · Prescribe</p>
+    <h2>From forecast to action</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Business formulas</h3>
+        <ul>
+          <li>Air surcharge + handling fee</li>
+          <li>Secondary supplier premium</li>
+          <li>Holding cost if we delay launch</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>PuLP mixed-integer program</h3>
+        <ul>
+          <li>Decision vars: units + channel binaries</li>
+          <li>Constraints: fill order, budget + fees, makespan delay</li>
+          <li>Objective: minimize <em>expected</em> cost</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:1rem">Governance check in tests: full allocation, budget respected when feasible, delay ceiling held.</p>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide" data-title="Week 3">
+    <p class="eyebrow">Week 3 · Closed loop</p>
+    <h2>API that operations can use</h2>
+    <table>
+      <thead><tr><th>Endpoint</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>POST /prescribe</code></td><td>Prediction + 4 options</td></tr>
+        <tr><td><code>POST /decisions</code></td><td>Write-back: save the human choice</td></tr>
+        <tr><td><code>PATCH /decisions/{id}/outcome</code></td><td>Log actual cost & delay</td></tr>
+        <tr><td><code>GET /decisions/roi</code></td><td>True ROI vs Delay Launch (no action)</td></tr>
+        <tr><td><code>GET /decisions/cost-accuracy</code></td><td>Predicted vs actual cost, on-budget rate</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:1rem">Dashboard: <strong>http://127.0.0.1:8000/ui/</strong></p>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide" data-title="Week 4">
+    <p class="eyebrow">Week 4 · Continuous learning</p>
+    <h2>Close the learning loop</h2>
+    <div class="grid-2">
+      <div class="card accent">
+        <h3>Drift check</h3>
+        <p>Average |actual − predicted| cost across resolved decisions.</p>
+        <p>Default threshold: <strong>15%</strong></p>
+      </div>
+      <div class="card accent">
+        <h3>Retrain trigger</h3>
+        <p><code>python week4/retrain.py</code></p>
+        <p>Point cron / GitHub Action at it weekly.</p>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:1rem">Retrain fits on shipments.csv <strong>plus</strong> eligible resolved outcomes that stored a feature snapshot and delay label.</p>
+  </section>
+
+  <!-- 14 -->
+  <section class="slide" data-title="Demo">
+    <p class="eyebrow">Live demo</p>
+    <h2>Show the model in two modes</h2>
+    <div class="grid-2">
+      <div class="card accent">
+        <h3>A · Terminal (2 min)</h3>
+        <p><code>python week1/demo_model.py</code></p>
+        <p>Four scenarios: reliable → peak → risky → worst case.</p>
+      </div>
+      <div class="card accent">
+        <h3>B · Dashboard (4 min)</h3>
+        <p><code>http://127.0.0.1:8000/ui/</code></p>
+        <p>Click <strong>Demo A / B / C</strong> → Execute → Log outcome → ROI vs no-action.</p>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:1rem">Script: <code>docs/presentation/DEMO_SCRIPT.md</code>. Backup: EDA figures + this deck.</p>
+  </section>
+
+  <!-- 15 -->
+  <section class="slide" data-title="Results">
+    <p class="eyebrow">Results</p>
+    <h2>What we can show today</h2>
+    <div class="grid-3">
+      <div class="card"><div class="metric">Temporal</div><div class="metric-label">Holdout vs baselines</div></div>
+      <div class="card"><div class="metric">P×$</div><div class="metric-label">Expected holding in MILP</div></div>
+      <div class="card"><div class="metric">25+</div><div class="metric-label">automated tests passing</div></div>
+    </div>
+    <ul>
+      <li>End-to-end loop: prescribe → decide → outcome → ROI vs no-action</li>
+      <li>Optimizer respects budget / delay constraints when feasible</li>
+      <li>Portfolio-ready GitHub structure (weeks, docs, notebook, figures)</li>
+    </ul>
+  </section>
+
+  <!-- 16 -->
+  <section class="slide" data-title="Skills">
+    <p class="eyebrow">Skills demonstrated</p>
+    <h2>What this project proves</h2>
+    <div class="grid-2">
+      <ul>
+        <li>EDA & storytelling with charts</li>
+        <li>Feature engineering for train + live inference</li>
+        <li>Supervised ML (classification + regression)</li>
+        <li>Prescriptive analytics / mixed-integer programming</li>
+      </ul>
+      <ul>
+        <li>API design & write-back patterns</li>
+        <li>True ROI + cost accuracy / outcome-aware retrain</li>
+        <li>Testing & reproducible project layout</li>
+        <li>Communicating analytics to non-ML stakeholders</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 17 -->
+  <section class="slide title-slide" data-title="Q&A">
+    <p class="eyebrow">Thank you</p>
+    <h1>Questions?</h1>
+    <p class="subtitle">Repo: Supply-Prescript · Docs: PROJECT_BRIEF.md · STEP_BY_STEP.md · This deck: docs/presentation/slides.html</p>
+    <p style="margin-top:2rem;opacity:0.85">Demo: <code>uvicorn week3.main:app --reload</code> → http://127.0.0.1:8000/ui/</p>
+  </section>
+
+</div>
+
+<div class="footer-bar">
+  <div>
+    <button type="button" id="prev">← Prev</button>
+    <button type="button" id="next">Next →</button>
+    <span class="kbd" style="margin-left:0.75rem">← → keys · F fullscreen · P print</span>
+  </div>
+  <div id="progress">1 / 17</div>
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  let i = 0;
+  const progress = document.getElementById("progress");
+
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+    progress.textContent = `${i + 1} / ${slides.length} · ${slides[i].dataset.title}`;
+    location.hash = String(i + 1);
+  }
+
+  document.getElementById("prev").onclick = () => show(i - 1);
+  document.getElementById("next").onclick = () => show(i + 1);
+
+  window.addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); show(i + 1); }
+    if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); show(i - 1); }
+    if (e.key === "Home") show(0);
+    if (e.key === "End") show(slides.length - 1);
+    if (e.key.toLowerCase() === "f") {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    }
+    if (e.key.toLowerCase() === "p") window.print();
+  });
+
+  const fromHash = parseInt(location.hash.replace("#", ""), 10);
+  show(Number.isFinite(fromHash) && fromHash > 0 ? fromHash - 1 : 0);
+</script>
+</body>
+</html>
