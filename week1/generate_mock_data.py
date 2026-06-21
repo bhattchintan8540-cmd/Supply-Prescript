@@ -141,6 +141,43 @@ def main() -> None:
     print(f"Delta Cove bad-quarter rows: {len(bad)} "
           f"({DELTA_COVE_BAD_QUARTER_START} .. {DELTA_COVE_BAD_QUARTER_END})")
     print(df["actual_delay_days"].describe())
+    seeded = seed_shipments_table(df)
+    print(f"seeded shipments table: {seeded} rows")
+
+
+def seed_shipments_table(df: pd.DataFrame) -> int:
+    """Write the generated history into the Shipment ORM table.
+
+    Training still reads the CSV; the table exists so the operational DB
+    is not an empty schema next to a live decisions log.
+    """
+    from week1 import models
+    from week1.database import SessionLocal, init_db
+
+    init_db()
+    session = SessionLocal()
+    try:
+        session.query(models.Shipment).delete()
+        rows = [
+            models.Shipment(
+                shipment_date=str(rec["shipment_date"]) if rec.get("shipment_date") else None,
+                sku=rec["sku"],
+                supplier=rec["supplier"],
+                origin_region=rec["origin_region"],
+                distance_km=float(rec["distance_km"]),
+                historical_avg_lead_time_days=float(rec["historical_avg_lead_time_days"]),
+                order_quantity=int(rec["order_quantity"]),
+                unit_cost_usd=float(rec["unit_cost_usd"]),
+                is_peak_season=bool(rec["is_peak_season"]),
+                actual_delay_days=float(rec["actual_delay_days"]),
+            )
+            for rec in df.to_dict(orient="records")
+        ]
+        session.bulk_save_objects(rows)
+        session.commit()
+        return len(rows)
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":
