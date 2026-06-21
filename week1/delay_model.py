@@ -14,9 +14,11 @@ Validation
 ----------
 When `shipment_date` is present, fit() uses a temporal split
 (60% train / 20% validation / 20% test):
-train on earlier shipments, validate on the middle window, test on
-the most recent period. That asks the business question correctly:
-can historically observed behavior predict *future* outcomes?
+train on earlier shipments, use the middle window for early stopping,
+probability calibration, and decision-threshold tuning, and report
+metrics only on the most recent period. That asks the business
+question correctly: can historically observed behavior predict *future*
+outcomes? The validation slice is never mixed into the test score.
 
 Metrics are recovered from synthetic data with programmed
 relationships (see generate_mock_data.py). An AUC of ~0.8 here means
@@ -31,6 +33,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier, XGBRegressor
+from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import (
     brier_score_loss,
     confusion_matrix,
@@ -70,6 +73,21 @@ def _safe_auc(y_true, y_prob) -> float | None:
     return float(roc_auc_score(y_true, y_prob))
 
 
+def _tune_threshold(y_true, y_prob) -> float:
+    """Pick a decision threshold on the validation slice (F1)."""
+    y_true = np.asarray(y_true)
+    y_prob = np.asarray(y_prob, dtype=float)
+    if pd.Series(y_true).nunique() < 2:
+        return 0.5
+    best_t, best_score = 0.5, -1.0
+    for t in np.linspace(0.20, 0.80, 61):
+        pred = (y_prob >= t).astype(int)
+        score = float(f1_score(y_true, pred, zero_division=0))
+        if score > best_score:
+            best_t, best_score = float(t), score
+    return best_t
+
+
 def _group_metric(y_true, y_prob, y_pred, groups, metric: str) -> dict[str, float]:
     out: dict[str, float] = {}
     for name, idx in groups.items():
@@ -100,6 +118,19 @@ class DelayModel:
         self._global_mean_delay: float = 0.0
         self._supplier_late_rate: dict[str, float] | None = None
         self._global_late_rate: float = 0.0
+        self.decision_threshold: float = 0.5
+        self._calibrator: IsotonicRegression | None = None
+
+    def _raw_proba(self, X) -> np.ndarray:
+        if self.classifier is None:
+            raise RuntimeError("Classifier not trained")
+        return self.classifier.predict_proba(X)[:, 1]
+
+    def _calibrate_proba(self, raw_proba) -> np.ndarray:
+        raw = np.asarray(raw_proba, dtype=float)
+        if self._calibrator is None:
+            return np.clip(raw, 0.0, 1.0)
+        return np.clip(self._calibrator.predict(raw), 0.0, 1.0)
 
     # -- training -----------------------------------------------------
     def fit(self, shipments: pd.DataFrame, verbose: bool = True) -> dict:
@@ -113,11 +144,17 @@ class DelayModel:
         if has_dates:
             dates = pd.to_datetime(shipments["shipment_date"])
             train_mask, val_mask, test_mask = _temporal_split_masks(dates)
-            # Fit on train only; report test metrics. Val is available for
-            # future threshold tuning / calibration work.
-            X_train, X_test = X.loc[train_mask], X.loc[test_mask]
-            y_days_train, y_days_test = y_days.loc[train_mask], y_days.loc[test_mask]
-            y_flag_train, y_flag_test = y_flag.loc[train_mask], y_flag.loc[test_mask]
+            X_train, X_val, X_test = X.loc[train_mask], X.loc[val_mask], X.loc[test_mask]
+            y_days_train, y_days_val, y_days_test = (
+                y_days.loc[train_mask],
+                y_days.loc[val_mask],
+                y_days.loc[test_mask],
+            )
+            y_flag_train, y_flag_val, y_flag_test = (
+                y_flag.loc[train_mask],
+                y_flag.loc[val_mask],
+                y_flag.loc[test_mask],
+            )
             meta_train = shipments.loc[train_mask]
             meta_test = shipments.loc[test_mask]
             validation_strategy = "temporal_60_20_20"
@@ -138,11 +175,11 @@ class DelayModel:
             )
             (
                 X_train,
-                _X_val,
+                X_val,
                 y_days_train,
-                _y_days_val,
+                y_days_val,
                 y_flag_train,
-                _y_flag_val,
+                y_flag_val,
                 meta_train,
                 _meta_val,
             ) = train_test_split(
@@ -154,7 +191,7 @@ class DelayModel:
                 random_state=13,
             )
             validation_strategy = "random_60_20_20_fallback"
-            n_val = int(len(_X_val))
+            n_val = int(len(X_val))
 
         # --- baselines from the training window only (no leakage) ---
         self._global_mean_delay = float(y_days_train.mean())
@@ -178,6 +215,8 @@ class DelayModel:
         baseline_prob = meta_test["supplier"].map(self._supplier_late_rate).fillna(self._global_late_rate)
         baseline_auc = _safe_auc(y_flag_test, baseline_prob)
 
+        use_val = n_val >= 20 and int(pd.Series(y_flag_val).nunique()) > 1
+
         self.regressor = XGBRegressor(
             n_estimators=250,
             max_depth=4,
@@ -185,8 +224,17 @@ class DelayModel:
             subsample=0.9,
             colsample_bytree=0.9,
             random_state=13,
+            **({"early_stopping_rounds": 30} if use_val else {}),
         )
-        self.regressor.fit(X_train, y_days_train)
+        if use_val:
+            self.regressor.fit(
+                X_train,
+                y_days_train,
+                eval_set=[(X_val, y_days_val)],
+                verbose=False,
+            )
+        else:
+            self.regressor.fit(X_train, y_days_train)
 
         self.classifier = XGBClassifier(
             n_estimators=200,
@@ -196,14 +244,29 @@ class DelayModel:
             colsample_bytree=0.9,
             random_state=13,
             eval_metric="logloss",
+            **({"early_stopping_rounds": 30} if use_val else {}),
         )
-        self.classifier.fit(X_train, y_flag_train)
+        if use_val:
+            self.classifier.fit(
+                X_train,
+                y_flag_train,
+                eval_set=[(X_val, y_flag_val)],
+                verbose=False,
+            )
+            raw_val = self._raw_proba(X_val)
+            self._calibrator = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
+            self._calibrator.fit(raw_val, np.asarray(y_flag_val, dtype=float))
+            self.decision_threshold = _tune_threshold(y_flag_val, self._calibrate_proba(raw_val))
+        else:
+            self.classifier.fit(X_train, y_flag_train)
+            self._calibrator = None
+            self.decision_threshold = 0.5
 
         pred_days = self.regressor.predict(X_test)
         mae = mean_absolute_error(y_days_test, pred_days)
 
-        proba = self.classifier.predict_proba(X_test)[:, 1]
-        pred_flag = (proba >= 0.5).astype(int)
+        proba = self._calibrate_proba(self._raw_proba(X_test))
+        pred_flag = (proba >= self.decision_threshold).astype(int)
         auc = _safe_auc(y_flag_test, proba)
 
         precision = float(precision_score(y_flag_test, pred_flag, zero_division=0))
@@ -244,6 +307,8 @@ class DelayModel:
             "n_val": int(n_val),
             "n_test": int(len(X_test)),
             "validation_strategy": validation_strategy,
+            "validation_used_for_tuning": bool(use_val),
+            "decision_threshold": round(float(self.decision_threshold), 3),
             "data_is_synthetic": True,
             "segment_auc": segment_auc,
         }
@@ -293,7 +358,7 @@ class DelayModel:
         X = X.reindex(columns=self.feature_columns, fill_value=0)
 
         predicted_days = float(self.regressor.predict(X)[0])
-        predicted_prob = float(self.classifier.predict_proba(X)[0, 1])
+        predicted_prob = float(self._calibrate_proba(self._raw_proba(X))[0])
         return max(predicted_days, 0.0), predicted_prob
 
     # -- persistence ------------------------------------------------------
@@ -308,6 +373,8 @@ class DelayModel:
                 "global_mean_delay": self._global_mean_delay,
                 "supplier_late_rate": self._supplier_late_rate,
                 "global_late_rate": self._global_late_rate,
+                "decision_threshold": self.decision_threshold,
+                "calibrator": self._calibrator,
             },
             path,
         )
@@ -324,4 +391,6 @@ class DelayModel:
         model._global_mean_delay = payload.get("global_mean_delay", 0.0)
         model._supplier_late_rate = payload.get("supplier_late_rate")
         model._global_late_rate = payload.get("global_late_rate", 0.0)
+        model.decision_threshold = float(payload.get("decision_threshold", 0.5))
+        model._calibrator = payload.get("calibrator")
         return model

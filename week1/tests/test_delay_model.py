@@ -70,7 +70,10 @@ def test_fit_uses_temporal_split_when_dates_present(trained_model):
         pytest.skip("no shipment_date column")
     assert metrics["validation_strategy"] == "temporal_60_20_20"
     assert metrics["n_train"] > 0 and metrics["n_test"] > 0
+    assert metrics["n_val"] > 0
     assert metrics["data_is_synthetic"] is True
+    assert metrics["validation_used_for_tuning"] is True
+    assert 0.2 <= metrics["decision_threshold"] <= 0.8
 
 
 def test_fit_reports_baseline_and_classifier_diagnostics(trained_model):
@@ -79,3 +82,20 @@ def test_fit_reports_baseline_and_classifier_diagnostics(trained_model):
     assert "precision" in metrics and "recall" in metrics and "f1" in metrics
     assert "confusion_matrix" in metrics
     assert metrics["baseline_mae_days"] >= 0
+
+
+def test_save_and_load_round_trips_calibrator(tmp_path, trained_model):
+    model, df, metrics = trained_model
+    sample = df.iloc[5].drop(labels=["actual_delay_days"], errors="ignore").to_dict()
+    sample.pop("shipment_date", None)
+    sample["is_peak_season"] = "True"
+    before = model.predict_one(sample)
+
+    path = tmp_path / "model.joblib"
+    model.save(path)
+    reloaded = DelayModel.load(path)
+    after = reloaded.predict_one(sample)
+
+    assert before == pytest.approx(after)
+    assert reloaded.decision_threshold == pytest.approx(model.decision_threshold)
+    assert metrics["validation_used_for_tuning"] is True

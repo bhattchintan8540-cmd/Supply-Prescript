@@ -37,8 +37,8 @@ def main() -> None:
     days, prob = model.predict_one(DEMO_SHIPMENT)
     days, prob = round(days, 1), round(prob, 3)
 
-    budget = 95_000
-    max_delay = 5
+    budget = DEFAULT_BUDGET_USD
+    max_delay = DEFAULT_MAX_DELAY_DAYS
 
     print()
     print("SupplyPrescript — predict + prescribe demo")
@@ -63,6 +63,7 @@ def main() -> None:
         predicted_delay_days=days,
         budget_cap_usd=budget,
         predicted_delay_probability=prob,
+        max_acceptable_delay_days=max_delay,
     )
     blend = solve_optimal_allocation(
         unit_cost_usd=DEMO_SHIPMENT["unit_cost_usd"],
@@ -73,25 +74,46 @@ def main() -> None:
         predicted_delay_probability=prob,
         partial_fulfillment_useful=PARTIAL_FULFILLMENT_USEFUL,
     )
-    options.append(
-        {
-            "label": "Optimizer Recommended Split",
-            "cost_usd": blend["total_cost_usd"],
-            "resulting_delay_days": blend["resulting_delay_days"],
-            "within_budget": blend["within_budget"],
-            "allocation_units": blend["allocation_units"],
-            "delay_constraint_mode": blend["delay_constraint_mode"],
-            "fixed_fees_usd": blend["fixed_fees_usd"],
-        }
-    )
+    if blend.get("infeasible"):
+        options.append(
+            {
+                "label": "Optimizer Recommended Split",
+                "cost_usd": 0.0,
+                "resulting_delay_days": 0.0,
+                "within_budget": False,
+                "allocation_units": blend.get("allocation_units") or {},
+                "delay_constraint_mode": blend.get("delay_constraint_mode"),
+                "fixed_fees_usd": 0.0,
+                "infeasible": True,
+                "message": blend.get("message"),
+            }
+        )
+    else:
+        options.append(
+            {
+                "label": "Optimizer Recommended Split",
+                "cost_usd": blend["total_cost_usd"],
+                "resulting_delay_days": blend["resulting_delay_days"],
+                "within_budget": blend["within_budget"],
+                "allocation_units": blend["allocation_units"],
+                "delay_constraint_mode": blend["delay_constraint_mode"],
+                "fixed_fees_usd": blend["fixed_fees_usd"],
+            }
+        )
 
     print(f"Prescribed options (budget ${budget:,.0f}, max delay {max_delay}d)")
     print("-" * 64)
     for opt in options:
+        if opt.get("infeasible"):
+            print(f"  [N/A] {opt['label']:<28}  {opt.get('message') or 'infeasible MILP'}")
+            continue
         flag = "OK " if opt["within_budget"] else "OVER"
+        sla = ""
+        if "within_sla" in opt:
+            sla = "  SLA-OK" if opt["within_sla"] else "  SLA-MISS"
         print(
             f"  [{flag}] {opt['label']:<28} "
-            f"${opt['cost_usd']:>10,.2f}   delay {opt['resulting_delay_days']}d"
+            f"${opt['cost_usd']:>10,.2f}   delay {opt['resulting_delay_days']}d{sla}"
         )
         if "allocation_units" in opt:
             parts = [

@@ -127,7 +127,10 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
         "auc": None,
         "n_train": None,
         "n_test": None,
+        "n_val": None,
         "validation_strategy": None,
+        "validation_used_for_tuning": None,
+        "decision_threshold": None,
         "baseline_mae_days": None,
         "baseline_auc": None,
         "precision": None,
@@ -135,6 +138,7 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
         "f1": None,
         "brier_score": None,
         "data_is_synthetic": True,
+        "segment_auc": None,
         "top_features": [],
     }
     if METRICS_PATH.exists():
@@ -144,7 +148,10 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
             "auc",
             "n_train",
             "n_test",
+            "n_val",
             "validation_strategy",
+            "validation_used_for_tuning",
+            "decision_threshold",
             "baseline_mae_days",
             "baseline_auc",
             "precision",
@@ -152,6 +159,7 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
             "f1",
             "brier_score",
             "data_is_synthetic",
+            "segment_auc",
         ):
             if key in saved:
                 payload[key] = saved[key]

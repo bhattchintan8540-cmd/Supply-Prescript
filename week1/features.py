@@ -21,6 +21,37 @@ NUMERIC_COLS = [
 # label for the probability model from the regression target.
 DELAY_FLAG_THRESHOLD_DAYS = 3.0
 
+_PEAK_TRUE = {"true", "t", "yes", "y", "1", "peak"}
+_PEAK_FALSE = {"false", "f", "no", "n", "0", "off", "off-peak", "off_peak", ""}
+
+
+def coerce_peak_season(series: pd.Series) -> pd.Series:
+    """Map mixed peak-season encodings to 0/1 without crashing.
+
+    CSV dumps, Excel, and manual rows often store this as 'True'/'False'
+    (or yes/no). pandas `.astype(int)` only works for bool/numeric dtypes
+    and raises ValueError on those strings.
+    """
+    if pd.api.types.is_bool_dtype(series) or pd.api.types.is_numeric_dtype(series):
+        return series.fillna(0).astype(int)
+
+    def _one(value) -> int:
+        if value is True or value is False:
+            return int(value)
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            return 0
+        text = str(value).strip().lower()
+        if text in _PEAK_TRUE:
+            return 1
+        if text in _PEAK_FALSE:
+            return 0
+        try:
+            return int(float(text) != 0.0)
+        except (TypeError, ValueError):
+            return 0
+
+    return series.map(_one).astype(int)
+
 
 def build_features(df: pd.DataFrame, categories: dict[str, list[str]] | None = None) -> tuple[pd.DataFrame, dict[str, list[str]]]:
     """One-hot encode the categorical columns and pass numerics through.
@@ -32,7 +63,7 @@ def build_features(df: pd.DataFrame, categories: dict[str, list[str]] | None = N
     persist them alongside the trained model.
     """
     df = df.copy()
-    df["is_peak_season"] = df["is_peak_season"].astype(int)
+    df["is_peak_season"] = coerce_peak_season(df["is_peak_season"])
 
     if categories is None:
         categories = {col: sorted(df[col].unique().tolist()) for col in CATEGORICAL_COLS}
