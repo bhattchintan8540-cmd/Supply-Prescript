@@ -25,3 +25,4 @@ the Python implementation. Read these before polishing slides further.
 3. Why isn't weighted-average delay always the right constraint?
 4. Why are fixed fees inside the MILP?
 5. What does retraining learn from newly captured outcomes?
+6. Why isn't cost forecast error enough to decide when to retrain?

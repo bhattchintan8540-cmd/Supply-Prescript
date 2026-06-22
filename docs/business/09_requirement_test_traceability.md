@@ -11,6 +11,7 @@
 | FR-7 Separate ROI vs cost accuracy | lifecycle test hits both endpoints | |
 | FR-8 Outcomes → training | `week4/tests/test_retrain.py::test_outcomes_as_training_rows_uses_feature_snapshots` | |
 | FR-9 Temporal + baselines | `week1/tests/test_delay_model.py::test_fit_uses_temporal_split_when_dates_present`, `test_fit_reports_baseline_and_classifier_diagnostics` | |
+| FR-10 Multi-signal retrain | `week4/tests/test_retrain.py::test_probability_rot_triggers_retrain_when_cost_looks_fine` | Cost MAPE alone is not the trigger |
 
 ## Analytical validity vs software correctness
 
