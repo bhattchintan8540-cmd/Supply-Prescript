@@ -73,19 +73,50 @@ def _safe_auc(y_true, y_prob) -> float | None:
     return float(roc_auc_score(y_true, y_prob))
 
 
-def _tune_threshold(y_true, y_prob) -> float:
-    """Pick a decision threshold on the validation slice (F1)."""
+def _expected_calibration_error(y_true, y_prob, n_bins: int = 10) -> float | None:
+    """ECE — gap between predicted P(delay) and observed late frequency."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_prob = np.asarray(y_prob, dtype=float)
+    if len(y_true) == 0 or pd.Series(y_true).nunique() < 2:
+        return None
+    bins = np.linspace(0.0, 1.0, n_bins + 1)
+    ece = 0.0
+    total = len(y_true)
+    for i in range(n_bins):
+        lo, hi = bins[i], bins[i + 1]
+        mask = (y_prob >= lo) & (y_prob <= hi) if i == n_bins - 1 else (y_prob >= lo) & (y_prob < hi)
+        if not np.any(mask):
+            continue
+        ece += (mask.sum() / total) * abs(float(y_true[mask].mean()) - float(y_prob[mask].mean()))
+    return float(ece)
+
+
+def _tune_threshold(y_true, y_prob, max_fpr: float = 0.35) -> float:
+    """Pick a validation threshold under an FPR ceiling, then maximize F1.
+
+    Unchecked false alarms burn air-freight budget; missed lates (FN) still
+    matter, so we take the best F1 among thresholds with FPR ≤ max_fpr.
+    """
     y_true = np.asarray(y_true)
     y_prob = np.asarray(y_prob, dtype=float)
     if pd.Series(y_true).nunique() < 2:
         return 0.5
-    best_t, best_score = 0.5, -1.0
+    candidates = []
     for t in np.linspace(0.20, 0.80, 61):
         pred = (y_prob >= t).astype(int)
+        tn = int(((y_true == 0) & (pred == 0)).sum())
+        fp = int(((y_true == 0) & (pred == 1)).sum())
+        tp = int(((y_true == 1) & (pred == 1)).sum())
+        fpr = fp / (fp + tn) if (fp + tn) else 0.0
         score = float(f1_score(y_true, pred, zero_division=0))
-        if score > best_score:
-            best_t, best_score = float(t), score
-    return best_t
+        candidates.append((float(t), score, fpr, tp))
+    feasible = [c for c in candidates if c[2] <= max_fpr and c[3] > 0]
+    if feasible:
+        return max(feasible, key=lambda c: c[1])[0]
+    with_tp = [c for c in candidates if c[3] > 0]
+    if not with_tp:
+        return 0.5
+    return min(with_tp, key=lambda c: (c[2], -c[1]))[0]
 
 
 def _group_metric(y_true, y_prob, y_pred, groups, metric: str) -> dict[str, float]:
@@ -273,6 +304,7 @@ class DelayModel:
         recall = float(recall_score(y_flag_test, pred_flag, zero_division=0))
         f1 = float(f1_score(y_flag_test, pred_flag, zero_division=0))
         brier = float(brier_score_loss(y_flag_test, proba)) if y_flag_test.nunique() > 1 else None
+        ece = _expected_calibration_error(y_flag_test, proba)
         cm = confusion_matrix(y_flag_test, pred_flag, labels=[0, 1]).tolist()
 
         # Segment diagnostics — useful when probability enters financial decisions.
@@ -299,6 +331,7 @@ class DelayModel:
             "recall": round(recall, 3),
             "f1": round(f1, 3),
             "brier_score": round(brier, 3) if brier is not None else None,
+            "ece": round(ece, 3) if ece is not None else None,
             "confusion_matrix": cm,
             "baseline_mae_days": round(float(baseline_mae), 3),
             "baseline_auc": round(baseline_auc, 3) if baseline_auc is not None else None,

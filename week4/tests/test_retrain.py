@@ -3,7 +3,13 @@ from datetime import datetime, timezone
 
 from week1 import models
 from week1.database import SessionLocal
-from week4.retrain import average_cost_drift, maybe_retrain, outcomes_as_training_rows, _reload_running_api
+from week4.retrain import (
+    average_cost_drift,
+    maybe_retrain,
+    outcome_drift_signals,
+    outcomes_as_training_rows,
+    _reload_running_api,
+)
 
 
 def _clear_decisions() -> None:
@@ -158,3 +164,45 @@ def test_outcomes_without_any_timestamp_are_skipped():
 
 def test_reload_running_api_is_false_when_nothing_listens():
     assert _reload_running_api() is False
+
+
+def test_probability_rot_triggers_retrain_when_cost_looks_fine():
+    """P(delay) drives expected holding — cost MAPE alone must not hide it."""
+    _clear_decisions()
+    session = SessionLocal()
+    try:
+        features = {
+            "sku": "SENSOR-IR",
+            "supplier": "Meridian Fasteners",
+            "origin_region": "North America",
+            "distance_km": 2400,
+            "historical_avg_lead_time_days": 9,
+            "order_quantity": 4000,
+            "unit_cost_usd": 8.5,
+            "is_peak_season": False,
+        }
+        session.add(
+            models.Decision(
+                shipment_sku="SENSOR-IR",
+                predicted_delay_days=2.0,
+                predicted_delay_probability=0.95,
+                options_json="[]",
+                shipment_features_json=json.dumps(features),
+                chosen_option_label="Delay Launch",
+                predicted_cost_usd=50000,
+                no_action_cost_usd=50000,
+                budget_cap_usd=100000,
+                actual_cost_usd=50500,
+                actual_delay_days=0.5,
+                created_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
+                resolved_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
+            )
+        )
+        session.commit()
+        signals = outcome_drift_signals(session)
+        assert signals is not None
+        assert signals["cost_mape"] < 0.15
+        assert "outcome_brier" in signals["triggers"]
+        assert signals["should_retrain"] is True
+    finally:
+        session.close()

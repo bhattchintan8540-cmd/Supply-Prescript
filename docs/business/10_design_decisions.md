@@ -33,8 +33,18 @@ Makespan is the operational delay unless partial fulfillment is useful.
 Post-hoc fees can make a "within budget" LP solution over budget after
 the fact. Channel binaries put `fee_k * y_k` in the objective and budget.
 
-## 5. Why retraining uses outcome snapshots
+## 6. Why retraining watches more than cost error
 
-Drift on resolved decisions is the trigger. Learning requires labels
-*and* features. Feature JSON on Decision lets eligible outcomes join the
-training frame; older rows without snapshots only affect the trigger.
+P(delay) scales expected holding in the MILP. Cost MAPE on the *chosen*
+option can stay small while probabilities rot (wrong channel mix next
+time). Retrain if **any** of these fire on resolved decisions:
+
+| Signal | Default threshold | Question |
+|---|---|---|
+| Cost MAPE | 15% | Did we forecast the chosen option's cost? |
+| Delay MAE | 3 days | Did magnitude predictions hold? |
+| Hard-miss rate | 35% | Share of outcomes off by > 3 days |
+| Outcome Brier | 0.25 | Did P(delay) match whether it was actually late? |
+
+Training history comes from `shipments.csv` when present, otherwise the
+seeded `Shipment` table, then eligible outcome snapshots.

@@ -5,10 +5,10 @@ Not a scheduler or a Kafka consumer - just a function you'd point cron
 (or a GitHub Action, or Retool's scheduled query) at once a week. It:
 
   1. pulls resolved decisions out of the database
-  2. checks how far predicted cost drifted from actual cost
-  3. if the average drift crosses RETRAIN_DRIFT_THRESHOLD, rebuilds a
-     training frame from shipments.csv PLUS eligible resolved outcomes
-     (those with a shipment feature snapshot and an actual delay label)
+  2. checks cost MAPE, delay MAE, hard-miss rate, and outcome Brier
+  3. if any signal crosses its threshold, rebuilds a training
+     frame from shipments.csv (or the Shipment table) PLUS eligible
+     resolved outcomes (feature snapshot + actual delay label)
   4. refits DelayModel and writes the artifact + metrics.json
 
 This is closed-loop learning when feature snapshots were stored at
@@ -28,11 +28,19 @@ import pandas as pd
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from week1.config import METRICS_PATH, MODEL_PATH, ROOT_DIR, RETRAIN_DRIFT_THRESHOLD
+from week1.config import (
+    METRICS_PATH,
+    MODEL_PATH,
+    RETRAIN_DELAY_MAE_DAYS,
+    RETRAIN_DRIFT_THRESHOLD,
+    RETRAIN_HARD_MISS_RATE,
+    RETRAIN_OUTCOME_BRIER,
+    ROOT_DIR,
+)
 from week1.database import SessionLocal, init_db
 from week1.delay_model import DelayModel
 from week1 import models
-from week1.features import CATEGORICAL_COLS, NUMERIC_COLS
+from week1.features import CATEGORICAL_COLS, DELAY_FLAG_THRESHOLD_DAYS, NUMERIC_COLS
 
 DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
 FEATURE_COLS = NUMERIC_COLS + CATEGORICAL_COLS
@@ -61,12 +69,74 @@ def _json_safe(value):
     return value
 
 
-def average_cost_drift(session) -> float | None:
-    resolved = session.query(models.Decision).filter(models.Decision.actual_cost_usd.isnot(None)).all()
+def outcome_drift_signals(session) -> dict | None:
+    """Multi-signal drift on resolved decisions.
+
+    Cost MAPE can look healthy while P(delay) — which scales expected
+    holding in the MILP — has gone stale. Retrain if *any* signal fires.
+    """
+    resolved = (
+        session.query(models.Decision)
+        .filter(models.Decision.actual_cost_usd.isnot(None))
+        .all()
+    )
     if not resolved:
         return None
-    errors = [abs(d.actual_cost_usd - d.predicted_cost_usd) / d.predicted_cost_usd for d in resolved if d.predicted_cost_usd]
-    return sum(errors) / len(errors) if errors else None
+
+    cost_errors = [
+        abs(d.actual_cost_usd - d.predicted_cost_usd) / d.predicted_cost_usd
+        for d in resolved
+        if d.predicted_cost_usd
+    ]
+    delay_pairs = [
+        (d.predicted_delay_days, d.actual_delay_days)
+        for d in resolved
+        if d.predicted_delay_days is not None and d.actual_delay_days is not None
+    ]
+    delay_abs = [abs(pred - actual) for pred, actual in delay_pairs]
+    brier_terms = []
+    for d in resolved:
+        if d.predicted_delay_probability is None or d.actual_delay_days is None:
+            continue
+        y = 1.0 if d.actual_delay_days > DELAY_FLAG_THRESHOLD_DAYS else 0.0
+        p = min(1.0, max(0.0, float(d.predicted_delay_probability)))
+        brier_terms.append((p - y) ** 2)
+
+    cost_mape = sum(cost_errors) / len(cost_errors) if cost_errors else None
+    delay_mae = sum(delay_abs) / len(delay_abs) if delay_abs else None
+    hard_miss_rate = (
+        sum(1 for err in delay_abs if err > DELAY_FLAG_THRESHOLD_DAYS) / len(delay_abs)
+        if delay_abs
+        else None
+    )
+    outcome_brier = sum(brier_terms) / len(brier_terms) if brier_terms else None
+
+    triggers = []
+    if cost_mape is not None and cost_mape >= RETRAIN_DRIFT_THRESHOLD:
+        triggers.append("cost_mape")
+    if delay_mae is not None and delay_mae >= RETRAIN_DELAY_MAE_DAYS:
+        triggers.append("delay_mae")
+    if hard_miss_rate is not None and hard_miss_rate >= RETRAIN_HARD_MISS_RATE:
+        triggers.append("hard_miss_rate")
+    if outcome_brier is not None and outcome_brier >= RETRAIN_OUTCOME_BRIER:
+        triggers.append("outcome_brier")
+
+    return {
+        "n_resolved": len(resolved),
+        "cost_mape": cost_mape,
+        "delay_mae": delay_mae,
+        "hard_miss_rate": hard_miss_rate,
+        "outcome_brier": outcome_brier,
+        "triggers": triggers,
+        "should_retrain": bool(triggers),
+    }
+
+
+def average_cost_drift(session) -> float | None:
+    signals = outcome_drift_signals(session)
+    if signals is None:
+        return None
+    return signals["cost_mape"]
 
 
 def outcomes_as_training_rows(session) -> pd.DataFrame:
@@ -105,14 +175,45 @@ def outcomes_as_training_rows(session) -> pd.DataFrame:
     return pd.DataFrame(rows) if rows else pd.DataFrame(columns=FEATURE_COLS + ["actual_delay_days", "shipment_date"])
 
 
+def _shipments_from_orm(session) -> pd.DataFrame:
+    rows = session.query(models.Shipment).all()
+    if not rows:
+        return pd.DataFrame()
+    records = []
+    for row in rows:
+        records.append(
+            {
+                "shipment_date": row.shipment_date,
+                "sku": row.sku,
+                "supplier": row.supplier,
+                "origin_region": row.origin_region,
+                "distance_km": row.distance_km,
+                "historical_avg_lead_time_days": row.historical_avg_lead_time_days,
+                "order_quantity": row.order_quantity,
+                "unit_cost_usd": row.unit_cost_usd,
+                "is_peak_season": row.is_peak_season,
+                "actual_delay_days": row.actual_delay_days,
+            }
+        )
+    return pd.DataFrame(records)
+
+
 def build_training_frame(session) -> tuple[pd.DataFrame, dict]:
-    """Shipments CSV ∪ eligible resolved outcomes."""
-    if not DATA_PATH.exists():
-        raise FileNotFoundError(str(DATA_PATH))
-    base = pd.read_csv(DATA_PATH)
+    """Shipments CSV (or ORM seed) ∪ eligible resolved outcomes."""
+    source = "csv"
+    if DATA_PATH.exists():
+        base = pd.read_csv(DATA_PATH)
+    else:
+        base = _shipments_from_orm(session)
+        source = "orm"
+        if base.empty:
+            raise FileNotFoundError(
+                f"{DATA_PATH} missing and shipments table is empty — generate mock data first"
+            )
     outcomes = outcomes_as_training_rows(session)
     meta = {
         "base_rows": len(base),
+        "base_source": source,
         "outcome_rows_added": len(outcomes),
     }
     if outcomes.empty:
@@ -129,19 +230,21 @@ def maybe_retrain(force: bool = False) -> dict:
     init_db()
     session = SessionLocal()
     try:
-        drift = average_cost_drift(session)
-        if drift is None:
-            return {"retrained": False, "reason": "no resolved decisions yet", "drift": None}
+        signals = outcome_drift_signals(session)
+        if signals is None:
+            return {"retrained": False, "reason": "no resolved decisions yet", "drift": None, "signals": None}
 
-        if not force and drift < RETRAIN_DRIFT_THRESHOLD:
+        if not force and not signals["should_retrain"]:
             return {
                 "retrained": False,
-                "reason": f"drift {drift:.1%} under threshold {RETRAIN_DRIFT_THRESHOLD:.0%}",
-                "drift": drift,
+                "reason": (
+                    f"signals under thresholds "
+                    f"(cost MAPE {signals['cost_mape']}, delay MAE {signals['delay_mae']}, "
+                    f"hard-miss {signals['hard_miss_rate']}, Brier {signals['outcome_brier']})"
+                ),
+                "drift": signals["cost_mape"],
+                "signals": signals,
             }
-
-        if not DATA_PATH.exists():
-            return {"retrained": False, "reason": f"{DATA_PATH} missing", "drift": drift}
 
         df, frame_meta = build_training_frame(session)
         model = DelayModel()
@@ -160,8 +263,11 @@ def maybe_retrain(force: bool = False) -> dict:
 
         return {
             "retrained": True,
-            "reason": f"drift {drift:.1%} >= threshold {RETRAIN_DRIFT_THRESHOLD:.0%}",
-            "drift": drift,
+            "reason": (
+                "forced" if force else f"triggers={signals['triggers']}"
+            ),
+            "drift": signals["cost_mape"],
+            "signals": signals,
             "metrics": metrics,
             "training_frame": frame_meta,
             "metrics_path": str(METRICS_PATH),

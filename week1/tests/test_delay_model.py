@@ -74,6 +74,7 @@ def test_fit_uses_temporal_split_when_dates_present(trained_model):
     assert metrics["data_is_synthetic"] is True
     assert metrics["validation_used_for_tuning"] is True
     assert 0.2 <= metrics["decision_threshold"] <= 0.8
+    assert metrics.get("ece") is None or metrics["ece"] >= 0.0
 
 
 def test_fit_reports_baseline_and_classifier_diagnostics(trained_model):
