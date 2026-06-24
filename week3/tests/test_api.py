@@ -142,3 +142,19 @@ def test_dashboard_is_served(client):
     resp = client.get("/ui/", follow_redirects=True)
     assert resp.status_code == 200
     assert "SupplyPrescript" in resp.text
+    assert "app.js" in resp.text
+
+
+def test_root_and_ui_without_slash_open_in_browser(client):
+    """Uvicorn prints http://127.0.0.1:8000 — that URL must reach the UI."""
+    root = client.get("/", follow_redirects=False)
+    assert root.status_code in {301, 302, 303, 307, 308}
+    assert root.headers["location"].rstrip("/").endswith("/ui") or root.headers["location"].endswith("/ui/")
+
+    noslash = client.get("/ui", follow_redirects=False)
+    assert noslash.status_code in {301, 302, 303, 307, 308}
+    assert "/ui/" in noslash.headers["location"]
+
+    page = client.get("/", follow_redirects=True)
+    assert page.status_code == 200
+    assert "SupplyPrescript" in page.text

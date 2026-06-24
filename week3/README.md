@@ -36,8 +36,10 @@ uvicorn week3.main:app --reload
 (run from the project root, not from inside `week3/`, so `week1.`/`week2.`
 imports resolve)
 
-Then open http://127.0.0.1:8000/ui/ for the dashboard or
-http://127.0.0.1:8000/docs for interactive API docs.
+Then open [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/) in a
+browser for the dashboard, or [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+for interactive API docs. The printed uvicorn URL
+(`http://127.0.0.1:8000`) redirects to the dashboard.
 
 ## Tests
 
