@@ -157,7 +157,6 @@ class ModelInfo(BaseModel):
     recall: float | None = None
     f1: float | None = None
     brier_score: float | None = None
-    ece: float | None = None
     data_is_synthetic: bool = True
     segment_auc: dict | None = None
     top_features: list[FeatureImportance] = []

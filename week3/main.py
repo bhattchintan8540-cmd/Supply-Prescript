@@ -73,8 +73,14 @@ app.add_middleware(
 
 @app.get("/")
 def root() -> RedirectResponse:
-    """Send browsers to the dashboard; API docs stay at /docs."""
-    return RedirectResponse(url="/ui/")
+    """Send browsers that open the uvicorn URL to the dashboard."""
+    return RedirectResponse(url="/ui/", status_code=307)
+
+
+@app.get("/ui")
+def ui_no_trailing_slash() -> RedirectResponse:
+    """http://127.0.0.1:8000/ui (no slash) must still load in the browser."""
+    return RedirectResponse(url="/ui/", status_code=307)
 
 
 _model: DelayModel | None = None
@@ -137,7 +143,6 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
         "recall": None,
         "f1": None,
         "brier_score": None,
-        "ece": None,
         "data_is_synthetic": True,
         "segment_auc": None,
         "top_features": [],
@@ -159,7 +164,6 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
             "recall",
             "f1",
             "brier_score",
-            "ece",
             "data_is_synthetic",
             "segment_auc",
         ):

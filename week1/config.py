@@ -47,10 +47,7 @@ PARTIAL_FULFILLMENT_USEFUL = os.getenv("SP_PARTIAL_FULFILLMENT_USEFUL", "0") in 
 # even when partial fulfillment is allowed — e.g. "at least 70% on time."
 DEFAULT_MIN_ON_TIME_FRACTION = float(os.getenv("SP_MIN_ON_TIME_FRACTION", 0.0))
 
-# Retrain triggers (week4/retrain.py). Cost MAPE alone is not enough:
-# P(delay) drives expected holding, so probability/delay rot must also
-# fire a rebuild even when chosen-option cost looks fine.
+# How far predicted cost can drift from actual cost before we bother
+# retraining (see week4/retrain.py). 15% felt like a reasonable "don't
+# retrain over noise" threshold - tune as more decisions accumulate.
 RETRAIN_DRIFT_THRESHOLD = float(os.getenv("SP_RETRAIN_DRIFT", 0.15))
-RETRAIN_DELAY_MAE_DAYS = float(os.getenv("SP_RETRAIN_DELAY_MAE", 3.0))
-RETRAIN_HARD_MISS_RATE = float(os.getenv("SP_RETRAIN_HARD_MISS", 0.35))
-RETRAIN_OUTCOME_BRIER = float(os.getenv("SP_RETRAIN_BRIER", 0.25))
