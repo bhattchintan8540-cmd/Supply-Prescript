@@ -82,6 +82,34 @@ def test_fit_reports_baseline_and_classifier_diagnostics(trained_model):
     assert "precision" in metrics and "recall" in metrics and "f1" in metrics
     assert "confusion_matrix" in metrics
     assert metrics["baseline_mae_days"] >= 0
+    assert metrics["fit_quality"] in {"balanced", "overfit", "underfit", "unvalidated"}
+    assert metrics["mae_train"] is not None
+    assert metrics["mae_val"] is not None
+    cap = metrics["n_estimators_cap"]
+    used = metrics["n_estimators_regressor"]
+    if cap is not None and used is not None:
+        assert used <= cap
+    assert 2 <= int(metrics["max_depth"]) <= 5
+
+
+def test_capacity_helpers_label_overfit_and_underfit():
+    from week1.delay_model import adjust_booster_params, diagnose_capacity, _BASE_BOOSTER
+
+    assert diagnose_capacity(0.4, 2.0, 1.5, 1.4) == "overfit"
+    assert diagnose_capacity(1.5, 1.6, 1.5, 1.4) == "underfit"
+    assert diagnose_capacity(1.0, 1.1, 1.8, 1.7) == "balanced"
+    over = adjust_booster_params(_BASE_BOOSTER, "overfit")
+    under = adjust_booster_params(_BASE_BOOSTER, "underfit")
+    assert over["max_depth"] == _BASE_BOOSTER["max_depth"] - 1
+    assert over["reg_lambda"] > _BASE_BOOSTER["reg_lambda"]
+    assert under["max_depth"] == _BASE_BOOSTER["max_depth"] + 1
+    assert adjust_booster_params(_BASE_BOOSTER, "balanced") is None
+
+
+def test_trained_model_includes_month_cycle_features(trained_model):
+    model, _, _ = trained_model
+    assert "month_sin" in model.feature_columns
+    assert "month_cos" in model.feature_columns
 
 
 def test_save_and_load_round_trips_calibrator(tmp_path, trained_model):
