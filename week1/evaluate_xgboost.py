@@ -122,7 +122,26 @@ def _verdict(metrics: dict) -> dict:
                 "pass": fp_ok,
             }
         )
-        ok = ok and fp_ok
+    ok = ok and fp_ok
+
+    quality = metrics.get("fit_quality")
+    if quality in {"overfit", "underfit"}:
+        checks.append(
+            {
+                "check": "Train/val capacity is balanced (not over- or under-fit vs supplier baseline)",
+                "model": quality,
+                "pass": False,
+            }
+        )
+        ok = False
+    elif quality == "balanced":
+        checks.append(
+            {
+                "check": "Train/val capacity is balanced (not over- or under-fit vs supplier baseline)",
+                "model": quality,
+                "pass": True,
+            }
+        )
 
     return {
         "model_doing_right": ok,
@@ -228,6 +247,8 @@ def write_process_markdown(path: Path, metrics: dict, verdict: dict) -> Path:
         f"- Classifier AUC: {metrics.get('auc')} (baseline {metrics.get('baseline_auc')})",
         f"- Regressor MAE (days): {metrics.get('mae_days')} (baseline {metrics.get('baseline_mae_days')})",
         f"- Precision / Recall / F1: {metrics.get('precision')} / {metrics.get('recall')} / {metrics.get('f1')}",
+        f"- Fit quality: {metrics.get('fit_quality')} (train MAE {metrics.get('mae_train')}, val MAE {metrics.get('mae_val')})",
+        f"- Trees used (regressor / classifier): {metrics.get('n_estimators_regressor')} / {metrics.get('n_estimators_classifier')}",
         "",
         "### Confusion matrix counts (test set)",
         "",
@@ -315,6 +336,15 @@ def main() -> dict:
                 "brier_score",
                 "confusion_matrix",
                 "data_is_synthetic",
+                "fit_quality",
+                "mae_train",
+                "mae_val",
+                "auc_train",
+                "auc_val",
+                "n_estimators_regressor",
+                "n_estimators_classifier",
+                "max_depth",
+                "capacity_adjustment",
             )
             if k in metrics
         },
