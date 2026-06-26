@@ -71,10 +71,6 @@ def main() -> None:
                 "f1",
                 "brier_score",
                 "decision_threshold",
-                "fit_quality",
-                "mae_train",
-                "mae_val",
-                "n_estimators_regressor",
                 "data_is_synthetic",
             )
             if k in clean

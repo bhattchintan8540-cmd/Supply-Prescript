@@ -13,6 +13,7 @@
 | FR-7 | Cost accuracy and intervention ROI are reported as separate metrics |
 | FR-8 | Retraining incorporates eligible resolved outcomes with feature snapshots |
 | FR-9 | Model validation uses temporal split when dates exist, plus baselines and classifier diagnostics |
+| FR-10 | Retrain trigger uses cost, delay, hard-miss, and probability (Brier) signals |
 
 ## User stories
 

@@ -81,8 +81,9 @@ uvicorn week3.main:app --reload
 
 Then open:
 
-- http://127.0.0.1:8000/ui/ — dashboard
-- http://127.0.0.1:8000/docs — interactive API docs
+- [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/) — dashboard
+  (`http://127.0.0.1:8000` redirects here)
+- [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) — interactive API docs
 
 Try this loop once:
 

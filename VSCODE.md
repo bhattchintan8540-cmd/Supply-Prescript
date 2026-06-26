@@ -211,17 +211,10 @@ The dashboard needs two files under `data/`:
 Uvicorn running on http://127.0.0.1:8000
 ```
 
-5. Open your browser and go to:
+5. Open your browser and go to [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/)
+   (or just [http://127.0.0.1:8000](http://127.0.0.1:8000) — it redirects to the dashboard).
 
-```text
-http://127.0.0.1:8000/ui/
-```
-
-6. Optional API docs:
-
-```text
-http://127.0.0.1:8000/docs
-```
+6. Optional API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 7. To stop the server: click the red ■ **Stop** button in the Debug toolbar,
    or focus the terminal and press `Ctrl+C`.

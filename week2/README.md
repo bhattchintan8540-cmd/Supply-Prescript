@@ -10,7 +10,7 @@ probability, work out what to actually do about it.
 - `frontend/` — plain HTML/CSS/JS dashboard (no build step). Includes
   **Demo A / B / C** one-click scenarios for live presentations.
   Submits a shipment, shows the option cards, lets you "execute" one.
-  Served by the Week 3 API at `http://127.0.0.1:8000/ui/`.
+  Served by the Week 3 API at [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/).
 - `demo_prescribe.py` — terminal version of predict + prescribe for
   when you cannot share a browser.
 
@@ -29,8 +29,10 @@ arriving units create usable value before the full order lands.
 ## Run it
 
 With the Week 3 API running (`uvicorn week3.main:app --reload` from the
-project root), open http://127.0.0.1:8000/ui/ — or open `frontend/index.html`
-directly in a browser (it will call `http://localhost:8000`).
+project root), open [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/)
+in a browser. `http://127.0.0.1:8000` and `http://127.0.0.1:8000/ui`
+redirect there. Opening `frontend/index.html` (file:// or Live Server)
+calls `http://127.0.0.1:8000` — not the preview origin.
 
 ## Tests
 

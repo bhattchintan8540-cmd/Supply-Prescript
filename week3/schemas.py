@@ -17,8 +17,6 @@ class ShipmentFeatures(BaseModel):
     order_quantity: int = Field(gt=0)
     unit_cost_usd: float = Field(gt=0)
     is_peak_season: bool = False
-    # Optional. Used for cyclic month features; omitted ⇒ "ship this month".
-    shipment_date: str | None = None
 
 
 class DelayPrediction(BaseModel):
@@ -159,16 +157,7 @@ class ModelInfo(BaseModel):
     recall: float | None = None
     f1: float | None = None
     brier_score: float | None = None
+    ece: float | None = None
     data_is_synthetic: bool = True
     segment_auc: dict | None = None
     top_features: list[FeatureImportance] = []
-    mae_train: float | None = None
-    mae_val: float | None = None
-    auc_train: float | None = None
-    auc_val: float | None = None
-    fit_quality: str | None = None
-    capacity_adjustment: str | None = None
-    n_estimators_regressor: int | None = None
-    n_estimators_classifier: int | None = None
-    max_depth: int | None = None
-    scale_pos_weight: float | None = None
