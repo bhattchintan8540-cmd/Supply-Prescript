@@ -6,6 +6,7 @@ paths call build_features().
 """
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 CATEGORICAL_COLS = ["supplier", "origin_region", "sku"]
@@ -16,6 +17,10 @@ NUMERIC_COLS = [
     "unit_cost_usd",
     "is_peak_season",
 ]
+# Cyclic month lets the model use seasonality without treating December as
+# "larger" than January. Filled from shipment_date when present, otherwise
+# the current UTC month (live prescribe = "ship now").
+CYCLIC_MONTH_COLS = ["month_sin", "month_cos"]
 
 # Delay is "significant" past this many days - used to derive the binary
 # label for the probability model from the regression target.
@@ -53,6 +58,21 @@ def coerce_peak_season(series: pd.Series) -> pd.Series:
     return series.map(_one).astype(int)
 
 
+def add_cyclic_month(df: pd.DataFrame) -> pd.DataFrame:
+    """Attach month_sin / month_cos. Does not mutate the caller's frame."""
+    out = df.copy()
+    if "shipment_date" in out.columns:
+        months = pd.to_datetime(out["shipment_date"], errors="coerce").dt.month
+    else:
+        months = pd.Series(np.nan, index=out.index)
+    fallback = int(pd.Timestamp.now(tz="UTC").month)
+    months = months.fillna(fallback).astype(int).clip(1, 12)
+    radians = 2.0 * np.pi * months / 12.0
+    out["month_sin"] = np.sin(radians)
+    out["month_cos"] = np.cos(radians)
+    return out
+
+
 def build_features(df: pd.DataFrame, categories: dict[str, list[str]] | None = None) -> tuple[pd.DataFrame, dict[str, list[str]]]:
     """One-hot encode the categorical columns and pass numerics through.
 
@@ -62,13 +82,13 @@ def build_features(df: pd.DataFrame, categories: dict[str, list[str]] | None = N
     categories present in `df` are used and returned so callers can
     persist them alongside the trained model.
     """
-    df = df.copy()
+    df = add_cyclic_month(df)
     df["is_peak_season"] = coerce_peak_season(df["is_peak_season"])
 
     if categories is None:
         categories = {col: sorted(df[col].unique().tolist()) for col in CATEGORICAL_COLS}
 
-    encoded_blocks = [df[NUMERIC_COLS].reset_index(drop=True)]
+    encoded_blocks = [df[NUMERIC_COLS + CYCLIC_MONTH_COLS].reset_index(drop=True)]
     for col in CATEGORICAL_COLS:
         cat_dtype = pd.CategoricalDtype(categories=categories[col])
         dummies = pd.get_dummies(df[col].astype(cat_dtype), prefix=col)
