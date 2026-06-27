@@ -65,10 +65,11 @@ python week1/train_model.py
 uvicorn week3.main:app --reload
 ```
 
-Then open:
+Then open in a browser:
 
-- Dashboard: http://127.0.0.1:8000/ui/
-- Interactive API docs: http://127.0.0.1:8000/docs
+- Dashboard: [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/)
+  (`http://127.0.0.1:8000` also works — it redirects to `/ui/`)
+- Interactive API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 Or use the Makefile: `make setup && make data && make explore && make train && make api`
 
