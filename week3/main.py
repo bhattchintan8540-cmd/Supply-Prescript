@@ -147,6 +147,16 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
         "data_is_synthetic": True,
         "segment_auc": None,
         "top_features": [],
+        "mae_train": None,
+        "mae_val": None,
+        "auc_train": None,
+        "auc_val": None,
+        "fit_quality": None,
+        "capacity_adjustment": None,
+        "n_estimators_regressor": None,
+        "n_estimators_classifier": None,
+        "max_depth": None,
+        "scale_pos_weight": None,
     }
     if METRICS_PATH.exists():
         saved = json.loads(METRICS_PATH.read_text())
@@ -168,6 +178,16 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
             "ece",
             "data_is_synthetic",
             "segment_auc",
+            "mae_train",
+            "mae_val",
+            "auc_train",
+            "auc_val",
+            "fit_quality",
+            "capacity_adjustment",
+            "n_estimators_regressor",
+            "n_estimators_classifier",
+            "max_depth",
+            "scale_pos_weight",
         ):
             if key in saved:
                 payload[key] = saved[key]

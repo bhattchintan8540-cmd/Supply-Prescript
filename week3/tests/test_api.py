@@ -58,6 +58,7 @@ def test_model_info_endpoint(client):
     assert body.get("data_is_synthetic") is True
     assert isinstance(body.get("top_features", []), list)
     assert "segment_auc" in body
+    assert "fit_quality" in body
 
 
 def test_predict_returns_a_prediction(client):
