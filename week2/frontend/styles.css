@@ -1,0 +1,78 @@
+:root {
+  --ink: #1c2430;
+  --paper: #f7f5f0;
+  --accent: #2f6f5e;
+  --accent-soft: #e3efe9;
+  --warn: #a4462f;
+  --border: #d8d3c8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+header {
+  padding: 1.75rem 2rem 1rem;
+  border-bottom: 3px solid var(--ink);
+}
+
+header h1 { margin: 0; letter-spacing: -0.02em; }
+.tagline { margin: 0.25rem 0 0; color: #5b6472; }
+
+main { max-width: 960px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+section { margin-bottom: 2.25rem; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.9rem;
+}
+
+label { display: flex; flex-direction: column; font-size: 0.85rem; gap: 0.3rem; }
+input, select { padding: 0.45rem 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.95rem; }
+
+button {
+  margin-top: 1rem;
+  background: var(--ink);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+button:hover { opacity: 0.88; }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+}
+
+.option-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  background: white;
+}
+.option-card h3 { margin: 0 0 0.35rem; font-size: 1.05rem; }
+.option-card p.desc { font-size: 0.85rem; color: #555; min-height: 3.4em; }
+.option-card .metric { font-size: 0.9rem; margin: 0.15rem 0; }
+.option-card.over-budget { border-color: var(--warn); background: #fbf1ee; }
+.option-card .tag { font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 3px; }
+.tag.ok { background: var(--accent-soft); color: var(--accent); }
+.tag.over { background: #f4ddd6; color: var(--warn); }
+.option-card button { width: 100%; margin-top: 0.6rem; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.88rem; }
+th, td { text-align: left; border-bottom: 1px solid var(--border); padding: 0.45rem 0.5rem; }
+th { color: #5b6472; font-weight: 600; }
+
+#roi-summary { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 0.75rem 0; font-size: 0.9rem; }
+#roi-summary strong { display: block; font-size: 1.1rem; }
