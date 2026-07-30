@@ -1,12 +1,12 @@
 """
 Week 1 - trains the delay model against data/shipments.csv and drops the
-artifact at the path in app/config.MODEL_PATH.
+artifact at the path in week1/config.MODEL_PATH.
 
     python week1/train_model.py
 
-Also called (with a filtered dataframe) from app/retrain.py once decisions
-start piling up and drift crosses the threshold - that's the "continuous
-learning" piece from Week 4.
+Also called from week4/retrain.py once decisions start piling up and
+drift crosses the threshold - that's the "continuous learning" piece
+from Week 4.
 """
 from __future__ import annotations
 
