@@ -13,6 +13,8 @@ pip install -r requirements.txt
 
 You only need Python 3.10+. Postgres is optional (sqlite is the default).
 
+Shortcut after setup: `make data`, `make explore`, `make train`, `make api`, `make test`.
+
 ---
 
 ## Step 0 — Scaffolding
@@ -29,6 +31,7 @@ Nothing runs yet — this just sets up the project shell.
 What you get:
 
 - Fake 3-year shipment history (`generate_mock_data.py`)
+- EDA charts (`explore_data.py` → `docs/figures/`) + notebook
 - Feature builder shared by train + live predict (`features.py`)
 - XGBoost classifier + regressor (`delay_model.py`)
 - Database tables for shipments and decisions (`models.py`)
@@ -37,11 +40,18 @@ Run it:
 
 ```bash
 python week1/generate_mock_data.py
+python week1/explore_data.py
 python week1/train_model.py
 ```
 
-You should see a MAE (average day error) and AUC printed, and a file at
-`data/delay_model.joblib`.
+You should see:
+
+1. ~4,000 rows written to `data/shipments.csv`
+2. Three PNGs under `docs/figures/`
+3. Training metrics printed (MAE ~1.9 days, AUC ~0.79) and
+   `data/delay_model.joblib` + `data/metrics.json` saved
+
+Optional: open `notebooks/01_exploratory_analysis.ipynb` in VS Code / Jupyter.
 
 ---
 
@@ -53,7 +63,7 @@ What you get:
 - A real linear program (PuLP) that can split the order across channels
 - A simple HTML dashboard in `week2/frontend/`
 
-The dashboard needs the Week 3 API, so open it after Step 3.
+The dashboard is served by the Week 3 API at `/ui/` — open it after Step 3.
 
 ---
 
@@ -65,10 +75,10 @@ Start the API (from the **project root**):
 uvicorn week3.main:app --reload
 ```
 
-Then either:
+Then open:
 
-- open `http://127.0.0.1:8000/docs` (interactive API docs), or
-- open `week2/frontend/index.html` in a browser
+- http://127.0.0.1:8000/ui/ — dashboard
+- http://127.0.0.1:8000/docs — interactive API docs
 
 Try this loop once:
 
