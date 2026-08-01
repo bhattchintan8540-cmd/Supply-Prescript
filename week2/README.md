@@ -14,8 +14,9 @@ actually do about it.
 
 ## Run it
 
-Open `frontend/index.html` directly in a browser once the Week 3 API
-is running (`uvicorn week3.main:app --reload` from the project root).
+With the Week 3 API running (`uvicorn week3.main:app --reload` from the
+project root), open http://127.0.0.1:8000/ui/ — or open `frontend/index.html`
+directly in a browser (it will call `http://localhost:8000`).
 
 ## Tests
 

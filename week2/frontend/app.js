@@ -1,6 +1,8 @@
-// Talks straight to the FastAPI service - swap this if you deploy the
-// backend somewhere other than localhost:8000.
-const API_BASE = window.SP_API_BASE || "http://localhost:8000";
+// Same-origin when the dashboard is served by FastAPI at `/`.
+// Falls back to localhost:8000 when the HTML is opened as a local file.
+const API_BASE = window.SP_API_BASE || (window.location.protocol.startsWith("http")
+  ? ""
+  : "http://localhost:8000");
 
 const form = document.getElementById("shipment-form");
 const predictionSection = document.getElementById("prediction-section");

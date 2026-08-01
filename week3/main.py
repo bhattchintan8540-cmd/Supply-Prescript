@@ -23,15 +23,19 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from week1 import models
-from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, MODEL_PATH
+from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, MODEL_PATH, ROOT_DIR
 from week1.database import get_session, init_db
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
 
 from . import schemas
+
+FRONTEND_DIR = ROOT_DIR / "week2" / "frontend"
 
 
 @asynccontextmanager
@@ -50,6 +54,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+def root() -> RedirectResponse:
+    """Send browsers to the dashboard; API docs stay at /docs."""
+    return RedirectResponse(url="/ui/")
+
 
 _model: DelayModel | None = None
 
@@ -82,6 +93,8 @@ def predict(shipment: schemas.ShipmentFeatures, model: DelayModel = Depends(get_
 @app.post("/prescribe", response_model=schemas.PrescribeResponse)
 def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get_model)):
     days, prob = model.predict_one(request.shipment.model_dump())
+    days = round(days, 1)
+    prob = round(prob, 3)
     budget_cap = request.budget_cap_usd or DEFAULT_BUDGET_USD
     max_delay = request.max_acceptable_delay_days or DEFAULT_MAX_DELAY_DAYS
 
@@ -117,7 +130,7 @@ def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get
     )
 
     return schemas.PrescribeResponse(
-        prediction=schemas.DelayPrediction(predicted_delay_days=round(days, 1), predicted_delay_probability=round(prob, 3)),
+        prediction=schemas.DelayPrediction(predicted_delay_days=days, predicted_delay_probability=prob),
         options=[schemas.Option(**opt) for opt in options],
         shipment_sku=request.shipment.sku,
         budget_cap_usd=budget_cap,
@@ -197,3 +210,8 @@ def decisions_roi(session: Session = Depends(get_session)):
         avg_cost_error_pct=round(sum(errors_pct) / len(errors_pct) * 100, 1) if errors_pct else None,
         decisions_within_budget_pct=round(len(within_budget) / len(resolved) * 100, 1),
     )
+
+
+# Mount last so /ui never shadows API routes above.
+if FRONTEND_DIR.exists():
+    app.mount("/ui", StaticFiles(directory=FRONTEND_DIR, html=True), name="ui")
