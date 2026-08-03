@@ -14,6 +14,7 @@ built week-by-week so a beginner can follow every commit.
 |---|---|
 | Problem statement | [PROJECT_BRIEF.md](PROJECT_BRIEF.md) |
 | Beginner walkthrough | [STEP_BY_STEP.md](STEP_BY_STEP.md) |
+| **Presentation pack** (slides, demo script, Q&A) | [docs/presentation/](docs/presentation/) |
 | EDA notebook | [notebooks/01_exploratory_analysis.ipynb](notebooks/01_exploratory_analysis.ipynb) |
 
 ---
