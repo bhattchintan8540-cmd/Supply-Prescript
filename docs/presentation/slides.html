@@ -412,16 +412,20 @@
   <!-- 14 -->
   <section class="slide" data-title="Demo">
     <p class="eyebrow">Live demo</p>
-    <h2>5-minute walkthrough</h2>
-    <ol>
-      <li>Start API → open <code>/ui/</code></li>
-      <li>Submit a shipment (e.g. MICROCHIP-A2 / NovaChip)</li>
-      <li>Show predicted delay + 4 option cards</li>
-      <li>Click <strong>Execute decision</strong> on one option</li>
-      <li>Click <strong>Log outcome</strong> with a sample actual cost/delay</li>
-      <li>Refresh ROI — error % and on-budget rate appear</li>
-    </ol>
-    <p class="muted">Backup if live demo fails: show `/docs` Swagger + EDA figures in the repo.</p>
+    <h2>Show the model in two modes</h2>
+    <div class="grid-2">
+      <div class="card accent">
+        <h3>A · Terminal (2 min)</h3>
+        <p><code>python week1/demo_model.py</code></p>
+        <p>Four scenarios: reliable → peak → risky → worst case.</p>
+      </div>
+      <div class="card accent">
+        <h3>B · Dashboard (4 min)</h3>
+        <p><code>http://127.0.0.1:8000/ui/</code></p>
+        <p>Click <strong>Demo A / B / C</strong> → Execute → Log outcome → ROI.</p>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:1rem">Script: <code>docs/presentation/DEMO_SCRIPT.md</code>. Backup: EDA figures + this deck.</p>
   </section>
 
   <!-- 15 -->

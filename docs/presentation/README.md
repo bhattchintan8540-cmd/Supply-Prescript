@@ -6,10 +6,25 @@ Everything you need to present **SupplyPrescript** (Project 3).
 |---|---|
 | [`slides.html`](slides.html) | Main slide deck (open in Chrome/Edge, press `F` for fullscreen) |
 | [`SPEAKER_NOTES.md`](SPEAKER_NOTES.md) | What to say on each slide + timing |
-| [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) | Click-by-click live demo |
+| [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) | Click-by-click live demo (terminal + browser) |
 | [`ONE_PAGER.md`](ONE_PAGER.md) | Print/PDF handout for evaluators |
 | [`Q&A_CHEAT_SHEET.md`](Q&A_CHEAT_SHEET.md) | Short answers to likely questions |
 | [`GOOGLE_SLIDES.md`](GOOGLE_SLIDES.md) | Copy-paste outline into Google Slides / PowerPoint |
+
+## Show the model in 30 seconds
+
+```bash
+python week1/generate_mock_data.py   # once
+python week1/train_model.py          # once
+python week1/demo_model.py           # ← run this on stage
+```
+
+Then open the dashboard and click **Demo A / B / C**:
+
+```bash
+uvicorn week3.main:app --reload
+# http://127.0.0.1:8000/ui/
+```
 
 ## Quick start on presentation day
 

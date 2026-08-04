@@ -76,3 +76,50 @@ th { color: #5b6472; font-weight: 600; }
 
 #roi-summary { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 0.75rem 0; font-size: 0.9rem; }
 #roi-summary strong { display: block; font-size: 1.1rem; }
+
+.hint { color: #5b6472; font-size: 0.95rem; margin: 0 0 0.75rem; }
+.scenario-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.scenario-btn {
+  margin-top: 0;
+  background: white;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  text-align: left;
+  padding: 0.55rem 0.8rem;
+  max-width: 240px;
+}
+.scenario-btn strong { display: block; font-size: 0.88rem; }
+.scenario-btn span { display: block; font-size: 0.78rem; color: #5b6472; margin-top: 0.15rem; }
+.scenario-btn:hover { border-color: var(--accent); background: var(--accent-soft); opacity: 1; }
+
+.prediction-box {
+  background: white;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  padding: 1rem 1.1rem;
+}
+.prediction-box .big-num {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0.15rem;
+}
+.prediction-box .muted { color: #5b6472; font-size: 0.9rem; }
+.risk-bar {
+  height: 10px;
+  background: #e8e4db;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.5rem 0 0.75rem;
+  max-width: 320px;
+}
+.risk-fill {
+  height: 100%;
+  background: var(--accent);
+}

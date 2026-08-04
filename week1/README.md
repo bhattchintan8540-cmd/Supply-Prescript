@@ -16,6 +16,8 @@ there's anything to prescribe.
 - `train_model.py` — CLI entry point: trains against the CSV, saves the
   artifact to `../data/delay_model.joblib` and metrics to
   `../data/metrics.json`.
+- `demo_model.py` — **presentation demo**: compares four shipments so
+  the audience can see supplier + peak-season effects live.
 - `config.py` / `database.py` / `models.py` — the scaffolding every
   later week builds on: settings, the SQLAlchemy engine, and the ORM
   tables (`Shipment` for training data, `Decision` for the closed loop
@@ -27,6 +29,7 @@ there's anything to prescribe.
 python week1/generate_mock_data.py
 python week1/explore_data.py
 python week1/train_model.py
+python week1/demo_model.py          # live model demo for presentations
 ```
 
 ## Tests

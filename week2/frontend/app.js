@@ -11,13 +11,76 @@ const optionsSection = document.getElementById("options-section");
 const optionsCards = document.getElementById("options-cards");
 const roiSummaryEl = document.getElementById("roi-summary");
 const decisionsTbody = document.querySelector("#decisions-table tbody");
+const scenarioButtons = document.getElementById("scenario-buttons");
 
 let lastPrescription = null; // stashed so "Execute Decision" has everything it needs to POST
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const data = new FormData(form);
+// One-click stories for live demos — fill the form, then auto-prescribe.
+const DEMO_SCENARIOS = [
+  {
+    id: "safe",
+    label: "Demo A · Reliable / off-peak",
+    blurb: "Low risk baseline",
+    values: {
+      sku: "SENSOR-IR",
+      supplier: "Meridian Fasteners",
+      origin_region: "North America",
+      distance_km: 2400,
+      historical_avg_lead_time_days: 9,
+      order_quantity: 4000,
+      unit_cost_usd: 8.5,
+      is_peak_season: false,
+      budget_cap_usd: 45000,
+      max_acceptable_delay_days: 5,
+    },
+  },
+  {
+    id: "peak",
+    label: "Demo B · Same supplier / peak",
+    blurb: "Only seasonality changes",
+    values: {
+      sku: "SENSOR-IR",
+      supplier: "Meridian Fasteners",
+      origin_region: "North America",
+      distance_km: 2400,
+      historical_avg_lead_time_days: 9,
+      order_quantity: 4000,
+      unit_cost_usd: 8.5,
+      is_peak_season: true,
+      budget_cap_usd: 45000,
+      max_acceptable_delay_days: 5,
+    },
+  },
+  {
+    id: "risky",
+    label: "Demo C · Risky supplier / peak",
+    blurb: "Highest delay risk",
+    values: {
+      sku: "MICROCHIP-A2",
+      supplier: "Delta Cove Electronics",
+      origin_region: "Asia Pacific",
+      distance_km: 9500,
+      historical_avg_lead_time_days: 18,
+      order_quantity: 6000,
+      unit_cost_usd: 14.2,
+      is_peak_season: true,
+      budget_cap_usd: 95000,
+      max_acceptable_delay_days: 5,
+    },
+  },
+];
 
+function fillForm(values) {
+  for (const [key, value] of Object.entries(values)) {
+    const el = form.elements[key];
+    if (!el) continue;
+    if (el.type === "checkbox") el.checked = Boolean(value);
+    else el.value = value;
+  }
+}
+
+async function runPrescription() {
+  const data = new FormData(form);
   const shipment = {
     sku: data.get("sku"),
     supplier: data.get("supplier"),
@@ -38,21 +101,49 @@ form.addEventListener("submit", async (event) => {
   });
 
   if (!resp.ok) {
-    alert(`Prescription request failed: ${resp.status}`);
+    alert(`Prescription request failed: ${resp.status}. Is the API running?`);
     return;
   }
   const body = await resp.json();
   lastPrescription = body;
   renderPrediction(body);
   renderOptions(body);
+}
+
+function renderScenarios() {
+  scenarioButtons.innerHTML = "";
+  DEMO_SCENARIOS.forEach((scenario) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "scenario-btn";
+    btn.innerHTML = `<strong>${scenario.label}</strong><span>${scenario.blurb}</span>`;
+    btn.addEventListener("click", async () => {
+      fillForm(scenario.values);
+      await runPrescription();
+      predictionSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    scenarioButtons.appendChild(btn);
+  });
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await runPrescription();
 });
 
 function renderPrediction(body) {
   const { predicted_delay_days, predicted_delay_probability } = body.prediction;
-  predictionSummary.textContent =
-    `${body.shipment_sku}: expected delay of ${predicted_delay_days} day(s), ` +
-    `${Math.round(predicted_delay_probability * 100)}% chance it's a meaningful delay ` +
-    `(budget cap $${body.budget_cap_usd.toLocaleString()}).`;
+  const pct = Math.round(predicted_delay_probability * 100);
+  predictionSummary.innerHTML = `
+    <p><strong>${body.shipment_sku}</strong> — expected delay
+      <span class="big-num">${predicted_delay_days}</span> day(s)</p>
+    <p>Chance of a meaningful delay (&gt; 3 days):
+      <span class="big-num">${pct}%</span></p>
+    <div class="risk-bar" aria-hidden="true">
+      <div class="risk-fill" style="width:${pct}%"></div>
+    </div>
+    <p class="muted">Budget cap $${body.budget_cap_usd.toLocaleString()}</p>
+  `;
   predictionSection.hidden = false;
 }
 
@@ -97,6 +188,7 @@ async function executeDecision(label) {
     return;
   }
   await loadDecisions();
+  document.getElementById("roi-section").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function loadDecisions() {
@@ -134,17 +226,22 @@ function renderDecisions(decisions) {
       const cell = row.lastElementChild;
       const btn = document.createElement("button");
       btn.textContent = "Log outcome";
-      btn.addEventListener("click", () => logOutcome(d.id));
+      btn.addEventListener("click", () => logOutcome(d.id, d.predicted_cost_usd));
       cell.appendChild(btn);
     }
     decisionsTbody.appendChild(row);
   });
 }
 
-async function logOutcome(decisionId) {
-  const actualCost = prompt("Actual cost (USD)?");
-  const actualDelay = prompt("Actual delay (days)?");
-  if (actualCost === null || actualDelay === null) return;
+async function logOutcome(decisionId, predictedCost) {
+  const suggested = Math.round(predictedCost * 1.08);
+  const actualCost = prompt(
+    `Actual cost (USD)?\nTip for demos: try ${suggested} (~8% above predicted ${Math.round(predictedCost)})`,
+    String(suggested),
+  );
+  if (actualCost === null) return;
+  const actualDelay = prompt("Actual delay (days)?", "2");
+  if (actualDelay === null) return;
 
   const resp = await fetch(`${API_BASE}/decisions/${decisionId}/outcome`, {
     method: "PATCH",
@@ -159,4 +256,5 @@ async function logOutcome(decisionId) {
 }
 
 document.getElementById("refresh-roi").addEventListener("click", loadDecisions);
+renderScenarios();
 loadDecisions();
