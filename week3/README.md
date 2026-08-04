@@ -27,6 +27,9 @@ uvicorn week3.main:app --reload
 (run from the project root, not from inside `week3/`, so `week1.`/`week2.`
 imports resolve)
 
+Then open http://127.0.0.1:8000/ui/ for the dashboard or
+http://127.0.0.1:8000/docs for interactive API docs.
+
 ## Tests
 
 `tests/test_api.py` walks the full lifecycle: prescribe → pick an

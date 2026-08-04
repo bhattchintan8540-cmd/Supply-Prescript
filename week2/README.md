@@ -8,14 +8,18 @@ actually do about it.
   linear program that blends all three channels to minimize cost under
   a budget cap and a max-delay constraint. See the module docstring for
   why the blended option is there and what it's trading off.
-- `frontend/` — plain HTML/CSS/JS dashboard (no build step). Submits a
-  shipment, shows the option cards, lets you "execute" one. Talks to
-  the Week 3 API at `http://localhost:8000` by default.
+- `frontend/` — plain HTML/CSS/JS dashboard (no build step). Includes
+  **Demo A / B / C** one-click scenarios for live presentations.
+  Submits a shipment, shows the option cards, lets you "execute" one.
+  Served by the Week 3 API at `http://127.0.0.1:8000/ui/`.
+- `demo_prescribe.py` — terminal version of predict + prescribe for
+  when you cannot share a browser.
 
 ## Run it
 
-Open `frontend/index.html` directly in a browser once the Week 3 API
-is running (`uvicorn week3.main:app --reload` from the project root).
+With the Week 3 API running (`uvicorn week3.main:app --reload` from the
+project root), open http://127.0.0.1:8000/ui/ — or open `frontend/index.html`
+directly in a browser (it will call `http://localhost:8000`).
 
 ## Tests
 

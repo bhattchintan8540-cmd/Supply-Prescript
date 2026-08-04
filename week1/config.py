@@ -28,6 +28,6 @@ DEFAULT_BUDGET_USD = float(os.getenv("SP_DEFAULT_BUDGET", 20_000))
 DEFAULT_MAX_DELAY_DAYS = int(os.getenv("SP_DEFAULT_MAX_DELAY_DAYS", 14))
 
 # How far predicted cost can drift from actual cost before we bother
-# retraining (see app/retrain.py). 15% felt like a reasonable "don't
+# retraining (see week4/retrain.py). 15% felt like a reasonable "don't
 # retrain over noise" threshold - tune as more decisions accumulate.
 RETRAIN_DRIFT_THRESHOLD = float(os.getenv("SP_RETRAIN_DRIFT", 0.15))

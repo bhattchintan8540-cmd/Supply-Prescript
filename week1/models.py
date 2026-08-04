@@ -9,7 +9,7 @@ from .database import Base
 
 class Shipment(Base):
     """One historical shipment record - this is what the delay model
-    trains on. Mock data lives in scripts/generate_mock_data.py."""
+    trains on. Mock data lives in week1/generate_mock_data.py."""
 
     __tablename__ = "shipments"
 
@@ -24,7 +24,7 @@ class Shipment(Base):
     is_peak_season = Column(Boolean, default=False)
     # label the model is trained against
     actual_delay_days = Column(Float, nullable=False)
-    created_at = Column(DateTime, default=dt.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: dt.datetime.now(dt.UTC))
 
 
 class Decision(Base):
@@ -55,7 +55,7 @@ class Decision(Base):
     actual_cost_usd = Column(Float, nullable=True)
     actual_delay_days = Column(Float, nullable=True)
 
-    created_at = Column(DateTime, default=dt.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: dt.datetime.now(dt.UTC))
     resolved_at = Column(DateTime, nullable=True)
 
     @property

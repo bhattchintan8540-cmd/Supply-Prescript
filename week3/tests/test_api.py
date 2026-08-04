@@ -15,7 +15,7 @@ def _ensure_model_artifact():
     missing rather than requiring a manual step before `pytest`."""
     if not MODEL_PATH.exists():
         if not DATA_PATH.exists():
-            pytest.skip(f"{DATA_PATH} missing - run scripts/generate_mock_data.py first")
+            pytest.skip(f"{DATA_PATH} missing - run week1/generate_mock_data.py first")
         df = pd.read_csv(DATA_PATH)
         model = DelayModel()
         model.fit(df, verbose=False)
@@ -108,3 +108,9 @@ def test_rejects_unknown_option_label(client):
         },
     )
     assert resp.status_code == 422
+
+
+def test_dashboard_is_served(client):
+    resp = client.get("/ui/", follow_redirects=True)
+    assert resp.status_code == 200
+    assert "SupplyPrescript" in resp.text

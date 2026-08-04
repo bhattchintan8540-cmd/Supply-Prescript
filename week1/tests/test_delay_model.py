@@ -10,7 +10,7 @@ DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
 @pytest.fixture(scope="module")
 def trained_model():
     if not DATA_PATH.exists():
-        pytest.skip(f"{DATA_PATH} missing - run scripts/generate_mock_data.py first")
+        pytest.skip(f"{DATA_PATH} missing - run week1/generate_mock_data.py first")
     df = pd.read_csv(DATA_PATH)
     model = DelayModel()
     model.fit(df, verbose=False)

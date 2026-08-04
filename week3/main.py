@@ -19,26 +19,48 @@ from pathlib import Path
 # (uvicorn week3.main:app from the repo root, or a direct python run).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from week1 import models
-from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, MODEL_PATH
+from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, MODEL_PATH, ROOT_DIR
 from week1.database import get_session, init_db
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
 
 from . import schemas
 
-app = FastAPI(title="SupplyPrescript API", version="0.4.0")
+FRONTEND_DIR = ROOT_DIR / "week2" / "frontend"
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="SupplyPrescript API", version="0.4.0", lifespan=lifespan)
+# Allow local dashboard opened as a file (null origin) or via a simple
+# static server on common localhost ports.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:8080"],
-    allow_credentials=True,
+    allow_origins=["*", "null"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+def root() -> RedirectResponse:
+    """Send browsers to the dashboard; API docs stay at /docs."""
+    return RedirectResponse(url="/ui/")
+
 
 _model: DelayModel | None = None
 
@@ -51,15 +73,10 @@ def get_model() -> DelayModel:
         if not MODEL_PATH.exists():
             raise HTTPException(
                 status_code=503,
-                detail=f"Delay model not found at {MODEL_PATH} - run scripts/train_model.py first",
+                detail=f"Delay model not found at {MODEL_PATH} - run week1/train_model.py first",
             )
         _model = DelayModel.load(MODEL_PATH)
     return _model
-
-
-@app.on_event("startup")
-def _startup() -> None:
-    init_db()
 
 
 @app.get("/health")
@@ -76,6 +93,8 @@ def predict(shipment: schemas.ShipmentFeatures, model: DelayModel = Depends(get_
 @app.post("/prescribe", response_model=schemas.PrescribeResponse)
 def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get_model)):
     days, prob = model.predict_one(request.shipment.model_dump())
+    days = round(days, 1)
+    prob = round(prob, 3)
     budget_cap = request.budget_cap_usd or DEFAULT_BUDGET_USD
     max_delay = request.max_acceptable_delay_days or DEFAULT_MAX_DELAY_DAYS
 
@@ -111,7 +130,7 @@ def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get
     )
 
     return schemas.PrescribeResponse(
-        prediction=schemas.DelayPrediction(predicted_delay_days=round(days, 1), predicted_delay_probability=round(prob, 3)),
+        prediction=schemas.DelayPrediction(predicted_delay_days=days, predicted_delay_probability=prob),
         options=[schemas.Option(**opt) for opt in options],
         shipment_sku=request.shipment.sku,
         budget_cap_usd=budget_cap,
@@ -157,7 +176,7 @@ def record_outcome(decision_id: int, outcome: schemas.OutcomeUpdate, session: Se
 
     decision.actual_cost_usd = outcome.actual_cost_usd
     decision.actual_delay_days = outcome.actual_delay_days
-    decision.resolved_at = dt.datetime.utcnow()
+    decision.resolved_at = dt.datetime.now(dt.UTC)
     session.commit()
     session.refresh(decision)
     return decision
@@ -191,3 +210,8 @@ def decisions_roi(session: Session = Depends(get_session)):
         avg_cost_error_pct=round(sum(errors_pct) / len(errors_pct) * 100, 1) if errors_pct else None,
         decisions_within_budget_pct=round(len(within_budget) / len(resolved) * 100, 1),
     )
+
+
+# Mount last so /ui never shadows API routes above.
+if FRONTEND_DIR.exists():
+    app.mount("/ui", StaticFiles(directory=FRONTEND_DIR, html=True), name="ui")

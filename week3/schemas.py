@@ -20,7 +20,7 @@ class ShipmentFeatures(BaseModel):
 
 class DelayPrediction(BaseModel):
     predicted_delay_days: float
-    predicted_delay_probability: float  # P(delay > 3 days), see ml/delay_model.py
+    predicted_delay_probability: float  # P(delay > 3 days), see week1/delay_model.py
 
 
 class PrescribeRequest(BaseModel):
@@ -54,6 +54,8 @@ class DecisionCreate(BaseModel):
 
 
 class DecisionOut(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: int
     shipment_sku: str
     predicted_delay_days: float
@@ -66,9 +68,6 @@ class DecisionOut(BaseModel):
     created_at: dt.datetime
     resolved_at: dt.datetime | None
     is_resolved: bool
-
-    class Config:
-        from_attributes = True
 
 
 class OutcomeUpdate(BaseModel):

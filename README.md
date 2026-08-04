@@ -1,59 +1,148 @@
 # SupplyPrescript
 
-Closed-loop prescriptive analytics for supply chain delays: predict a
-shipment's delay risk, get four mathematically-derived options for
-handling it, act on one, and later find out whether the prediction was
-actually right.
+**Closed-loop prescriptive analytics for supply-chain delays**
 
-This is Project 3 from the Axlero Solutions data analytics brief,
-built separately from the MetricMind project - no shared code or
-database between them.
+Predict whether a shipment will be late → prescribe cost-aware options
+(air freight, secondary supplier, delay launch, or a PuLP-optimized mix)
+→ write the human decision back → log the real outcome → retrain when
+predictions drift.
 
-## Layout
+This is **Project 3** from the Axlero Solutions Data Analytics brief,
+built week-by-week so a beginner can follow every commit.
 
-Each week's work lives in its own top-level folder, matching the
-brief's week-wise implementation phases. Later weeks import from
-earlier ones (Week 3's API needs Week 1's model and Week 2's solver) -
-each week's `README.md` explains exactly what it pulls in and why.
+| Resource | Link |
+|---|---|
+| Problem statement | [PROJECT_BRIEF.md](PROJECT_BRIEF.md) |
+| Beginner walkthrough | [STEP_BY_STEP.md](STEP_BY_STEP.md) |
+| **Presentation pack** (slides, demo script, Q&A) | [docs/presentation/](docs/presentation/) |
+| EDA notebook | [notebooks/01_exploratory_analysis.ipynb](notebooks/01_exploratory_analysis.ipynb) |
 
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  A[Mock shipment history<br/>week1] --> B[Feature builder]
+  B --> C[XGBoost delay model<br/>prob + days]
+  C --> D[Prescriptive solver<br/>PuLP LP + 3 pure options]
+  D --> E[FastAPI + dashboard<br/>week3 / week2]
+  E --> F[(Decisions table<br/>write-back)]
+  F --> G[Outcome + ROI]
+  G --> H{Drift > threshold?}
+  H -->|yes| C
 ```
-week1/    predictive baseline + app scaffolding (data, model, db, config)
-week2/    prescriptive solver (PuLP) + dashboard
-week3/    FastAPI service - write-back and the closed-loop ROI endpoints
-week4/    continuous learning / retrain trigger
-data/     generated at runtime (csv, sqlite db, model artifact) - gitignored
-```
 
-Every week folder also has its own `tests/` - `conftest.py` sits at the
-project root so pytest applies the same test-database setup to all of
-them.
+| Week | Folder | What you build |
+|---|---|---|
+| 1 | `week1/` | Mock data, EDA, features, XGBoost delay model, SQLAlchemy schema |
+| 2 | `week2/` | Cost formulas, PuLP optimizer, HTML dashboard |
+| 3 | `week3/` | FastAPI: prescribe → write-back → outcome → ROI |
+| 4 | `week4/` | Drift check + retrain trigger |
 
-## Running it
+---
+
+## Quick start
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# Week 1: generate mock shipment history + train the delay model
+# Week 1 — data, charts, model
 python week1/generate_mock_data.py
+python week1/explore_data.py
 python week1/train_model.py
 
-# Week 3: start the API (defaults to a local sqlite file, data/supplyprescript.db)
+# Week 3 — API + dashboard (uses week2 UI + week1 model)
 uvicorn week3.main:app --reload
 ```
 
-Run everything with `python -m pytest` from the project root (not
-`cd` into a week folder first - the imports assume the root is on
-`sys.path`, which running from there gives you for free).
+Then open:
 
-Then open `week2/frontend/index.html` in a browser - it talks to
-`http://localhost:8000`.
+- Dashboard: http://127.0.0.1:8000/ui/
+- Interactive API docs: http://127.0.0.1:8000/docs
 
-### Switching to Postgres
+Or use the Makefile: `make setup && make data && make explore && make train && make api`
 
-The app was designed against Postgres (see `docker-compose.yml`), but
-defaults to sqlite so there's nothing to install before you can run
-it. To use Postgres instead:
+---
+
+## Sample EDA output
+
+After `python week1/explore_data.py`:
+
+![Delay distribution](docs/figures/delay_distribution.png)
+
+![Mean delay by supplier](docs/figures/delay_by_supplier.png)
+
+![Peak-season effect](docs/figures/peak_season_effect.png)
+
+Typical training metrics (seeded mock data): **MAE ≈ 1.9 days**, **AUC ≈ 0.79**.
+
+---
+
+## Presenting / live demo
+
+```bash
+# 1) Terminal — show the delay model on 4 scenarios
+python week1/demo_model.py
+python week2/demo_prescribe.py
+
+# 2) Browser — click Demo A / B / C on the dashboard
+uvicorn week3.main:app --reload
+# → http://127.0.0.1:8000/ui/
+```
+
+Full click-by-click script: [docs/presentation/DEMO_SCRIPT.md](docs/presentation/DEMO_SCRIPT.md).
+Slides: [docs/presentation/slides.html](docs/presentation/slides.html).
+
+---
+
+## Closed-loop API (Week 3)
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /predict` | Delay days + late probability |
+| `POST /prescribe` | Prediction + 4 options (A/B/C + optimizer split) |
+| `POST /decisions` | **Write-back** — persist the chosen option |
+| `PATCH /decisions/{id}/outcome` | **Close the loop** — log actual cost/delay |
+| `GET /decisions/roi` | Decision ROI (predicted vs actual) |
+| `GET /health` | Liveness + whether the model is loaded |
+
+---
+
+## Continuous learning (Week 4)
+
+```bash
+python week4/retrain.py            # retrain only if cost drift is high
+python week4/retrain.py --force    # always retrain
+```
+
+---
+
+## Tests
+
+```bash
+python -m pytest -q
+```
+
+Shared fixture in `conftest.py` points every week’s tests at a throwaway SQLite DB.
+
+---
+
+## Skills demonstrated
+
+- Predictive analytics (XGBoost classification + regression)
+- Feature engineering shared by train and live inference
+- Prescriptive analytics / linear programming (PuLP)
+- Operational write-back and Decision ROI
+- Drift monitoring and retrain trigger
+- FastAPI + lightweight dashboard
+- Pytest coverage across all four weeks
+
+---
+
+## Optional Postgres
 
 ```bash
 docker compose up -d
@@ -61,33 +150,4 @@ export DATABASE_URL=postgresql+psycopg2://sp_user:sp_pass@localhost:5432/supplyp
 uvicorn week3.main:app --reload
 ```
 
-Nothing else changes - `week1/database.py` reads `DATABASE_URL` and
-the rest of the code doesn't know or care which engine is behind it.
-
-## Why the solver returns four options, not three
-
-The brief's example (air freight / secondary supplier / delay launch)
-is three all-or-nothing strategies. `week2/solver.py` computes those
-three as straightforward cost formulas, *and* runs an actual PuLP
-linear program that splits the order across all three channels to
-minimize cost subject to a budget cap and a max-delay constraint. That
-blended answer usually beats every pure option and is the part that
-justifies calling this "mathematical optimization" rather than three
-if/else branches - see that file's docstring for the reasoning, and
-`week2/tests/test_solver.py` for what's actually being enforced.
-
-## Known simplifications
-
-- `week4/retrain.py` re-fits on `data/shipments.csv` rather than
-  folding resolved decisions directly into the training set - see
-  `week4/README.md` for why.
-- The dashboard in `week2/frontend/` is plain HTML/CSS/JS rather than
-  a React build, since a build step doesn't add much at this size -
-  the brief lists "Retool or React" as options anyway. Wiring a React
-  front end up to the same API is a drop-in swap if you want one
-  later.
-- Fixed handling fees (the flat per-shipment cost on top of per-unit
-  cost) aren't modeled *inside* the LP itself, since that needs binary
-  "is this channel active" variables to do properly - overkill for
-  three channels. They're added back onto the objective value after
-  solving instead; see the comment in `solve_optimal_allocation`.
+Default storage is a local SQLite file (`data/supplyprescript.db`) — no Docker required for the demo path.

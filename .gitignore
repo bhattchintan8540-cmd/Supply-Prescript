@@ -4,5 +4,11 @@ __pycache__/
 data/*.db
 data/*.csv
 data/*.joblib
+data/metrics.json
+data/test_*.db
 !data/.gitkeep
 .pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+.DS_Store
+
