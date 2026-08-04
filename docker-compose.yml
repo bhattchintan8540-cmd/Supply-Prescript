@@ -1,0 +1,24 @@
+version: "3.9"
+
+# Not required to run the project - the app defaults to a local sqlite
+# file so you can get moving with zero setup. Bring this up only once
+# you actually want to point DATABASE_URL at Postgres, e.g.:
+#
+#   docker compose up -d
+#   export DATABASE_URL=postgresql+psycopg2://sp_user:sp_pass@localhost:5432/supplyprescript
+#   uvicorn app.main:app --reload
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sp_user
+      POSTGRES_PASSWORD: sp_pass
+      POSTGRES_DB: supplyprescript
+    ports:
+      - "5432:5432"
+    volumes:
+      - supplyprescript_pgdata:/var/lib/postgresql/data
+
+volumes:
+  supplyprescript_pgdata:
