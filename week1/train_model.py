@@ -41,10 +41,16 @@ def main() -> None:
 
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     model.save(MODEL_PATH)
+
+    importance = model.feature_importance(top_n=10)
+    clean["top_features"] = importance
     METRICS_PATH.write_text(json.dumps(clean, indent=2))
     print(f"saved model -> {MODEL_PATH}")
     print(f"saved metrics -> {METRICS_PATH}")
     print(clean)
+    print("top features (regressor):")
+    for row in importance:
+        print(f"  {row['importance']:.4f}  {row['feature']}")
 
 
 if __name__ == "__main__":

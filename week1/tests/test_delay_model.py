@@ -47,3 +47,12 @@ def test_unseen_category_does_not_crash(trained_model):
     days, prob = model.predict_one(sample)
     assert days >= 0
     assert 0.0 <= prob <= 1.0
+
+
+def test_feature_importance_returns_ranked_rows(trained_model):
+    model, _ = trained_model
+    rows = model.feature_importance(top_n=5)
+    assert len(rows) == 5
+    assert all("feature" in row and "importance" in row for row in rows)
+    scores = [row["importance"] for row in rows]
+    assert scores == sorted(scores, reverse=True)

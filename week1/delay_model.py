@@ -71,6 +71,18 @@ class DelayModel:
                   f"held out {metrics['n_test']} - MAE {metrics['mae_days']}d, AUC {metrics['auc']}")
         return metrics
 
+    def feature_importance(self, top_n: int = 10) -> list[dict]:
+        """Top features by average gain from the delay regressor (presentation-friendly)."""
+        if self.regressor is None or self.feature_columns is None:
+            raise RuntimeError("Model not trained/loaded yet")
+        scores = self.regressor.feature_importances_
+        ranked = sorted(
+            zip(self.feature_columns, scores),
+            key=lambda pair: pair[1],
+            reverse=True,
+        )[:top_n]
+        return [{"feature": name, "importance": round(float(score), 4)} for name, score in ranked]
+
     # -- inference ------------------------------------------------------
     def predict_one(self, shipment: dict) -> tuple[float, float]:
         """Returns (predicted_delay_days, predicted_delay_probability)."""
