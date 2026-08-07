@@ -108,3 +108,9 @@ def test_rejects_unknown_option_label(client):
         },
     )
     assert resp.status_code == 422
+
+
+def test_dashboard_is_served(client):
+    resp = client.get("/ui/", follow_redirects=True)
+    assert resp.status_code == 200
+    assert "SupplyPrescript" in resp.text
