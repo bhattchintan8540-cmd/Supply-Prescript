@@ -6,7 +6,7 @@ version: "3.9"
 #
 #   docker compose up -d
 #   export DATABASE_URL=postgresql+psycopg2://sp_user:sp_pass@localhost:5432/supplyprescript
-#   uvicorn app.main:app --reload
+#   uvicorn week3.main:app --reload
 
 services:
   postgres:
