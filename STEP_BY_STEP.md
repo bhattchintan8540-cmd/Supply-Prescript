@@ -112,6 +112,19 @@ All week folders share one `conftest.py` so tests use a throwaway sqlite DB.
 
 ---
 
+## Presenting the project
+
+Open the slide deck in a browser:
+
+```text
+docs/presentation/slides.html
+```
+
+Full pack (speaker notes, demo script, one-pager, Q&A):
+[`docs/presentation/README.md`](docs/presentation/README.md).
+
+---
+
 ## Common beginner mistakes
 
 1. Running `uvicorn` from inside `week3/` — imports break. Stay at repo root.

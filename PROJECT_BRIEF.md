@@ -40,3 +40,6 @@ already late. By then the options are expensive and messy.
 
 Follow **[STEP_BY_STEP.md](STEP_BY_STEP.md)** if you are new — it walks
 through each commit and how to run the code yourself.
+
+Presenting this project? Use **[docs/presentation/](docs/presentation/)**
+(slides, speaker notes, live demo script, one-pager, Q&A cheat sheet).
