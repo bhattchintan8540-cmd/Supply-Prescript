@@ -12,6 +12,7 @@ someone picked, and later log what actually happened.
   | Endpoint | What it does |
   |---|---|
   | `POST /predict` | raw delay prediction for a shipment |
+  | `GET /model/info` | training metrics (MAE / AUC / top features) |
   | `POST /prescribe` | prediction + the four options from Week 2 |
   | `POST /decisions` | **write-back** — persists the option someone chose |
   | `GET /decisions` | list everything logged so far |

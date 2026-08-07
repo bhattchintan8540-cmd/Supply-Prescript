@@ -82,3 +82,20 @@ class RoiSummary(BaseModel):
     avg_actual_cost_usd: float | None
     avg_cost_error_pct: float | None
     decisions_within_budget_pct: float | None
+
+
+class FeatureImportance(BaseModel):
+    feature: str
+    importance: float
+
+
+class ModelInfo(BaseModel):
+    """Training metrics for demos /docs — loaded from data/metrics.json when present."""
+
+    model_loaded: bool
+    model_path: str
+    mae_days: float | None = None
+    auc: float | None = None
+    n_train: int | None = None
+    n_test: int | None = None
+    top_features: list[FeatureImportance] = []

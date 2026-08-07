@@ -28,7 +28,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from week1 import models
-from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, MODEL_PATH, ROOT_DIR
+from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, METRICS_PATH, MODEL_PATH, ROOT_DIR
 from week1.database import get_session, init_db
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
@@ -82,6 +82,33 @@ def get_model() -> DelayModel:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "model_loaded": _model is not None}
+
+
+@app.get("/model/info", response_model=schemas.ModelInfo)
+def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
+    """Return held-out training metrics so presenters can quote MAE/AUC live."""
+    payload: dict = {
+        "model_loaded": True,
+        "model_path": str(MODEL_PATH),
+        "mae_days": None,
+        "auc": None,
+        "n_train": None,
+        "n_test": None,
+        "top_features": [],
+    }
+    if METRICS_PATH.exists():
+        import json
+
+        saved = json.loads(METRICS_PATH.read_text())
+        payload["mae_days"] = saved.get("mae_days")
+        payload["auc"] = saved.get("auc")
+        payload["n_train"] = saved.get("n_train")
+        payload["n_test"] = saved.get("n_test")
+        payload["top_features"] = saved.get("top_features") or []
+    else:
+        # Fallback: compute top features from the loaded model artifact.
+        payload["top_features"] = model.feature_importance(top_n=5)
+    return schemas.ModelInfo(**payload)
 
 
 @app.post("/predict", response_model=schemas.DelayPrediction)

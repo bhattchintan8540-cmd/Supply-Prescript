@@ -47,6 +47,17 @@ def test_health(client):
     assert client.get("/health").status_code == 200
 
 
+def test_model_info_endpoint(client):
+    resp = client.get("/model/info")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["model_loaded"] is True
+    assert "model_path" in body
+    # metrics.json may or may not exist in CI; either way the payload is valid
+    assert "mae_days" in body
+    assert isinstance(body.get("top_features", []), list)
+
+
 def test_predict_returns_a_prediction(client):
     resp = client.post("/predict", json=SAMPLE_SHIPMENT)
     assert resp.status_code == 200

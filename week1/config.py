@@ -20,6 +20,7 @@ DATABASE_URL = os.getenv(
 )
 
 MODEL_PATH = Path(os.getenv("MODEL_PATH", ROOT_DIR / "data" / "delay_model.joblib"))
+METRICS_PATH = Path(os.getenv("METRICS_PATH", ROOT_DIR / "data" / "metrics.json"))
 
 # Business constraints the solver enforces by default. A real deployment
 # would probably pull these from a settings table so ops can tune them

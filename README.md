@@ -105,6 +105,7 @@ Slides: [docs/presentation/slides.html](docs/presentation/slides.html).
 |---|---|
 | `POST /predict` | Delay days + late probability |
 | `POST /prescribe` | Prediction + 4 options (A/B/C + optimizer split) |
+| `GET /model/info` | Training metrics (MAE, AUC, top features) for demos |
 | `POST /decisions` | **Write-back** — persist the chosen option |
 | `PATCH /decisions/{id}/outcome` | **Close the loop** — log actual cost/delay |
 | `GET /decisions/roi` | Decision ROI (predicted vs actual) |
