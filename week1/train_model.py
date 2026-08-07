@@ -63,13 +63,22 @@ def main() -> None:
             for k in (
                 "validation_strategy",
                 "mae_days",
+                "rmse_days",
+                "r2_days",
                 "baseline_mae_days",
+                "mae_lift_bootstrap",
                 "auc",
+                "pr_auc",
                 "baseline_auc",
+                "auc_lift_bootstrap",
                 "precision",
                 "recall",
                 "f1",
+                "specificity",
                 "brier_score",
+                "ece",
+                "decision_threshold",
+                "probability_calibrated",
                 "data_is_synthetic",
             )
             if k in clean
