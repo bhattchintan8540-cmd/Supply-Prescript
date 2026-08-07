@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, MODEL_PATH
+from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, MODEL_PATH, PARTIAL_FULFILLMENT_USEFUL
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
 
@@ -51,12 +51,18 @@ def main() -> None:
     print(f"  expected delay : {days} days")
     print(f"  P(delay > 3d)  : {prob:.1%}")
     print()
+    print("Decision economics")
+    print(f"  expected holding uses P(delay)×magnitude (not magnitude alone)")
+    print(f"  delay constraint mode: "
+          f"{'weighted average' if PARTIAL_FULFILLMENT_USEFUL else 'operational makespan'}")
+    print()
 
     options = pure_options(
         unit_cost_usd=DEMO_SHIPMENT["unit_cost_usd"],
         order_quantity=DEMO_SHIPMENT["order_quantity"],
         predicted_delay_days=days,
         budget_cap_usd=budget,
+        predicted_delay_probability=prob,
     )
     blend = solve_optimal_allocation(
         unit_cost_usd=DEMO_SHIPMENT["unit_cost_usd"],
@@ -64,14 +70,18 @@ def main() -> None:
         predicted_delay_days=days,
         budget_cap_usd=budget,
         max_acceptable_delay_days=max_delay,
+        predicted_delay_probability=prob,
+        partial_fulfillment_useful=PARTIAL_FULFILLMENT_USEFUL,
     )
     options.append(
         {
             "label": "Optimizer Recommended Split",
             "cost_usd": blend["total_cost_usd"],
-            "resulting_delay_days": blend["weighted_avg_delay_days"],
+            "resulting_delay_days": blend["resulting_delay_days"],
             "within_budget": blend["within_budget"],
             "allocation_units": blend["allocation_units"],
+            "delay_constraint_mode": blend["delay_constraint_mode"],
+            "fixed_fees_usd": blend["fixed_fees_usd"],
         }
     )
 
@@ -90,9 +100,11 @@ def main() -> None:
                 if qty > 0
             ]
             print(f"         split: {', '.join(parts)}")
+            print(f"         mode={opt['delay_constraint_mode']}, "
+                  f"fixed fees=${opt['fixed_fees_usd']:,.2f}")
     print()
-    print("Say out loud: the model flagged peak-season risk; the optimizer")
-    print("then finds the cheapest mix that still respects the delay ceiling.")
+    print("Say out loud: probability scales expected holding cost; the MILP")
+    print("pays fixed fees inside the budget and respects operational delay.")
     print()
 
 
