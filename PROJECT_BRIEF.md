@@ -33,7 +33,7 @@ already late. By then the options are expensive and messy.
 
 | Week | Goal | Folder |
 |---|---|---|
-| 1 | Mock history + delay model + database scaffolding | `week1/` |
+| 1 | Mock history + EDA + delay model + database scaffolding | `week1/` |
 | 2 | Cost formulas + PuLP optimizer + dashboard UI | `week2/` |
 | 3 | FastAPI: prescribe, write-back, outcome, ROI | `week3/` |
 | 4 | Drift check + retrain trigger | `week4/` |
