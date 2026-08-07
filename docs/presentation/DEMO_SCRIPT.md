@@ -1,96 +1,98 @@
-# Live demo script (3–5 minutes)
+# Live demo script — show the model (5–7 minutes)
 
-Do this **once at home** before the presentation so muscle memory is there.
+Practice this **once** before your presentation.
 
-## Before you present (setup)
+You have **two demo modes**:
+
+| Mode | Best when | Command / URL |
+|---|---|---|
+| **A. Terminal model demo** | Projector / shared screen, no browser fuss | `python week1/demo_model.py` |
+| **B. Browser dashboard** | You want the full prescribe + ROI story | http://127.0.0.1:8000/ui/ |
+
+Most people should do **A then B** (2 min + 4 min).
+
+---
+
+## Setup (before the meeting)
 
 ```bash
-cd Supply-Prescript          # your clone
-source .venv/bin/activate    # Windows: .venv\Scripts\activate
+cd Supply-Prescript
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 python week1/generate_mock_data.py
 python week1/train_model.py
+
+# leave this running in a second terminal for Mode B
 uvicorn week3.main:app --reload
 ```
 
-Open two browser tabs:
-
-1. **Dashboard:** http://127.0.0.1:8000/ui/
-2. **API docs (backup):** http://127.0.0.1:8000/docs
-
-Also open `docs/presentation/slides.html` for the deck.
-
----
-
-## Script (say this while clicking)
-
-### 1. Dashboard (10 sec)
-
-> “This is the operations view. A planner enters a shipment and gets a prescription.”
-
-### 2. Fill the form (keep defaults or use this)
-
-| Field | Value |
-|---|---|
-| SKU | MICROCHIP-A2 |
-| Supplier | NovaChip Manufacturing |
-| Region | Asia Pacific |
-| Distance | 8800 |
-| Lead time | 16 |
-| Quantity | 6000 |
-| Unit cost | 14.2 |
-| Budget | 95000 |
-| Max delay | 5 |
-
-Click **Get prescription**.
-
-> “The model says roughly **X days** delay and about **Y%** chance it’s a meaningful delay.”
-
-### 3. Option cards (30 sec)
-
-Point to the four cards:
-
-> “Air is fastest but costly. Secondary is a middle path. Delay launch is cheapest but accepts the slip.  
-> The fourth card is the optimizer split — a math mix under our budget and delay limit.”
-
-### 4. Execute decision (20 sec)
-
-Click **Execute decision** on **Secondary Supplier** or **Optimizer Recommended Split**.
-
-> “That write-back stores the human choice in the decisions table — the operational system of record.”
-
-### 5. Log outcome (30 sec)
-
-Click **Log outcome**. Enter something like:
-
-- Actual cost: predicted cost × ~1.1 (e.g. if predicted was 94170, enter `103500`)
-- Actual delay: `2`
-
-> “Weeks later we learn the truth. Logging it closes the loop.”
-
-### 6. ROI (20 sec)
-
-Click **Refresh**.
-
-> “Decision ROI shows how far predictions were from reality and how often we stayed on budget.  
-> If that error stays high, Week 4’s retrain job fires.”
-
----
-
-## Backup plan (if API won’t start)
-
-1. Show EDA images in `docs/figures/`
-2. In Swagger `/docs`, if API is up for you only — or show code snippets from `week3/main.py`
-3. Show test command output: `python -m pytest -q` → 15 passed
-4. Continue with Results / Skills slides
-
----
-
-## Optional Week 4 one-liner
+Quick check:
 
 ```bash
-python week4/retrain.py
+python week1/demo_model.py
+python week2/demo_prescribe.py
 ```
 
-> “With few resolved decisions, it may say drift is under threshold — that’s correct behavior.”
+---
+
+## Mode A — Terminal: “watch the model react” (≈2 min)
+
+```bash
+python week1/demo_model.py
+```
+
+**Say while the table prints:**
+
+1. **Reliable / off-peak** — “This is our calm baseline.”
+2. **Same supplier / peak** — “I only flipped peak season. Risk goes up — the model learned seasonality.”
+3. **Risky supplier** — “Delta Cove has historically worse delays.”
+4. **Risky + peak** — “Worst case. Highest days and late probability.”
+
+Optional deepen:
+
+```bash
+python week2/demo_prescribe.py
+```
+
+> “Now we turn that forecast into four costed actions — including an optimizer split.”
+
+---
+
+## Mode B — Browser dashboard (≈4 min)
+
+Open **http://127.0.0.1:8000/ui/**
+
+### Click the demo buttons (do not type)
+
+1. Click **Demo A · Reliable / off-peak**  
+   → Point at the big delay number and the green risk bar (should be lower).
+
+2. Click **Demo B · Same supplier / peak**  
+   → “Only seasonality changed — watch the risk rise.”
+
+3. Click **Demo C · Risky supplier / peak**  
+   → “Highest risk. Now look at the four option cards.”
+
+### Close the loop
+
+4. On Demo C results, click **Execute decision** on **Optimizer Recommended Split** (or Secondary Supplier).
+5. Click **Log outcome** — accept the suggested cost (~8% above predicted) and delay `2`.
+6. Point at **Decision ROI** — error % and on-budget rate appear.
+
+**Closing line:**
+
+> “That’s the closed loop: the model predicted, we prescribed, a human chose, we logged reality, and we can retrain if we drift.”
+
+---
+
+## If something breaks live
+
+| Problem | Fix |
+|---|---|
+| `Model not found` | `python week1/train_model.py` |
+| Dashboard fetch fails | API not running — start `uvicorn week3.main:app --reload` from repo root |
+| Port busy | `uvicorn week3.main:app --reload --port 8001` then open that port |
+| No time for browser | Stay on Mode A only — still a strong model demo |
+
+Backup slides: `docs/presentation/slides.html` (EDA charts still tell the story).

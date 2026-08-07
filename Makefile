@@ -1,7 +1,7 @@
 # Convenience targets for beginners — run from the project root.
 # Example:  make setup && make train && make api
 
-.PHONY: setup data explore train api test retrain clean
+.PHONY: setup data explore train demo demo-ui api test retrain clean
 
 setup:
 	python -m venv .venv
@@ -15,6 +15,15 @@ explore:
 
 train:
 	python week1/train_model.py
+
+# Presentation demos (model comparison + prescribe story)
+demo: train
+	python week1/demo_model.py
+	python week2/demo_prescribe.py
+
+demo-ui: train
+	@echo "Open http://127.0.0.1:8000/ui/  — click Demo A / B / C buttons"
+	uvicorn week3.main:app --reload
 
 api:
 	uvicorn week3.main:app --reload

@@ -81,6 +81,23 @@ Typical training metrics (seeded mock data): **MAE ≈ 1.9 days**, **AUC ≈ 0.7
 
 ---
 
+## Presenting / live demo
+
+```bash
+# 1) Terminal — show the delay model on 4 scenarios
+python week1/demo_model.py
+python week2/demo_prescribe.py
+
+# 2) Browser — click Demo A / B / C on the dashboard
+uvicorn week3.main:app --reload
+# → http://127.0.0.1:8000/ui/
+```
+
+Full click-by-click script: [docs/presentation/DEMO_SCRIPT.md](docs/presentation/DEMO_SCRIPT.md).
+Slides: [docs/presentation/slides.html](docs/presentation/slides.html).
+
+---
+
 ## Closed-loop API (Week 3)
 
 | Endpoint | Purpose |
