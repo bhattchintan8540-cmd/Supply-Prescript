@@ -14,6 +14,7 @@ class Shipment(Base):
     __tablename__ = "shipments"
 
     id = Column(Integer, primary_key=True)
+    shipment_date = Column(String, nullable=True)  # ISO date; used for temporal splits
     sku = Column(String, nullable=False)
     supplier = Column(String, nullable=False)
     origin_region = Column(String, nullable=False)
@@ -34,6 +35,13 @@ class Decision(Base):
     Rows start with actual_cost_usd / actual_delay_days as NULL and get
     backfilled once the real-world outcome is known - that's the "close
     the loop" step described in the project doc.
+
+    no_action_cost_usd is the Delay Launch counterfactual stored at
+    decision time so true ROI can compare intervention outcomes against
+    "what would this have cost if we did nothing."
+
+    shipment_features_json captures the feature vector needed to fold
+    resolved outcomes back into future model training.
     """
 
     __tablename__ = "decisions"
@@ -48,8 +56,13 @@ class Decision(Base):
     # if the solver's exact option set changes later.
     options_json = Column(Text, nullable=False)
 
+    # Feature snapshot so resolved outcomes can become training rows.
+    shipment_features_json = Column(Text, nullable=True)
+
     chosen_option_label = Column(String, nullable=False)
     predicted_cost_usd = Column(Float, nullable=False)
+    # Expected cost of Delay Launch (do nothing) at decision time.
+    no_action_cost_usd = Column(Float, nullable=True)
     budget_cap_usd = Column(Float, nullable=False)
 
     actual_cost_usd = Column(Float, nullable=True)
