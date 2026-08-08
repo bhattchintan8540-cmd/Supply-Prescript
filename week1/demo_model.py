@@ -1,9 +1,9 @@
 """
 Live model demo for presentations.
 
-Compares a few realistic shipments side-by-side so you can show the
-audience that the delay model reacts to supplier / corridor risk.
-Scenarios use vendors that appear in the USAID SCMS open dataset.
+Uses demo scenarios built from the real open training extract
+(USAID SCMS / UCI Cargo 2000) so the terminal demo matches the
+dashboard Demo A / B / C buttons.
 
     python week1/demo_model.py
 
@@ -17,12 +17,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from week1.config import MODEL_PATH
+from week1.dataset_service import demo_scenarios_from_data, dataset_summary
 from week1.delay_model import DelayModel
 
-# Curated stories grounded in real SCMS vendors / corridors.
-# Trinity Biotech has near-zero historical delay; CIPLA / Aurobindo
-# sit on the higher-delay Asia→Africa ARV corridor in the open data.
-SCENARIOS = [
+# Fallback if the extract is missing (offline).
+FALLBACK_SCENARIOS = [
     {
         "name": "Trinity Biotech · Europe · off-peak",
         "why": "Low-delay HIV rapid-test vendor on a short corridor.",
@@ -52,22 +51,8 @@ SCENARIOS = [
         },
     },
     {
-        "name": "Aurobindo · Asia→Africa · long haul",
-        "why": "High-volume Indian ARV supplier — higher historical delay.",
-        "shipment": {
-            "sku": "ARV-GENERIC-EFAVIRENZ",
-            "supplier": "Aurobindo Pharma Limited",
-            "origin_region": "Asia Pacific",
-            "distance_km": 8300,
-            "historical_avg_lead_time_days": 120,
-            "order_quantity": 11000,
-            "unit_cost_usd": 0.12,
-            "is_peak_season": False,
-        },
-    },
-    {
         "name": "CIPLA · Asia→Africa · peak",
-        "why": "Highest mean delay among large SCMS vendors in the open data.",
+        "why": "Higher mean delay among large SCMS vendors in the open data.",
         "shipment": {
             "sku": "ARV-GENERIC-TENOFOVIR-DISOPROXIL-FUMARAT",
             "supplier": "CIPLA LIMITED",
@@ -80,6 +65,23 @@ SCENARIOS = [
         },
     },
 ]
+
+
+def _scenarios() -> list[dict]:
+    live = demo_scenarios_from_data()
+    if not live:
+        return FALLBACK_SCENARIOS
+    out = []
+    for case in live:
+        values = {k: v for k, v in case["values"].items() if k not in {"budget_cap_usd", "max_acceptable_delay_days"}}
+        out.append(
+            {
+                "name": case["label"],
+                "why": case["blurb"],
+                "shipment": values,
+            }
+        )
+    return out
 
 
 def _bar(prob: float, width: int = 20) -> str:
@@ -97,21 +99,31 @@ def main() -> None:
         )
 
     model = DelayModel.load(MODEL_PATH)
+    summary = dataset_summary()
+    scenarios = _scenarios()
+
     print()
-    print("SupplyPrescript — delay model demo")
+    print("SupplyPrescript — delay model demo (real open data)")
     print("=" * 72)
     print(f"Loaded: {MODEL_PATH.name}")
+    if summary.get("available"):
+        sources = ", ".join(s["label"] for s in summary.get("sources", [])) or "training extract"
+        print(f"Dataset: {sources}")
+        print(
+            f"         {summary['n_rows']:,} rows · {summary['n_suppliers']} suppliers · "
+            f"late>3d {summary.get('late_rate_pct')}% · mean delay {summary.get('mean_delay_days')}d"
+        )
     print()
-    print(f"{'Scenario':<42} {'Days':>6}  {'P(late>3d)':>10}  Risk bar")
+    print(f"{'Scenario':<44} {'Days':>6}  {'P(late>3d)':>10}  Risk bar")
     print("-" * 72)
 
     results = []
-    for case in SCENARIOS:
+    for case in scenarios:
         days, prob = model.predict_one(case["shipment"])
         days = round(days, 1)
         prob = round(prob, 3)
         results.append((case, days, prob))
-        print(f"{case['name']:<42} {days:>6.1f}  {prob:>9.1%}  {_bar(prob)}")
+        print(f"{case['name'][:44]:<44} {days:>6.1f}  {prob:>9.1%}  {_bar(prob)}")
 
     print("-" * 72)
     print()
@@ -119,7 +131,7 @@ def main() -> None:
     for case, days, prob in results:
         print(f"  • {case['name']}: {days} days, {prob:.0%} late risk — {case['why']}")
     print()
-    print("Next: open the full prescribe demo")
+    print("Next: open the dashboard (same demos + dataset panel)")
     print("  uvicorn week3.main:app --reload")
     print("  → http://127.0.0.1:8000/ui/")
     print()

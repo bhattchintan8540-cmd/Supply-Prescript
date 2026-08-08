@@ -99,3 +99,59 @@ class ModelInfo(BaseModel):
     n_train: int | None = None
     n_test: int | None = None
     top_features: list[FeatureImportance] = []
+    dataset_rows: int | None = None
+    dataset_message: str | None = None
+
+
+class SupplierStat(BaseModel):
+    supplier: str
+    n: int
+    mean_delay_days: float
+
+
+class DatasetSource(BaseModel):
+    key: str
+    label: str
+    n_rows: int
+
+
+class DatasetFile(BaseModel):
+    key: str
+    label: str
+    path: str
+    n_rows: int
+
+
+class DatasetSummary(BaseModel):
+    available: bool
+    message: str
+    n_rows: int
+    n_suppliers: int
+    n_skus: int
+    n_regions: int
+    late_rate_pct: float | None = None
+    mean_delay_days: float | None = None
+    median_delay_days: float | None = None
+    regions: list[str] = []
+    top_suppliers: list[SupplierStat] = []
+    sources: list[DatasetSource] = []
+    files: list[DatasetFile] = []
+
+
+class DemoScenario(BaseModel):
+    id: str
+    label: str
+    blurb: str
+    values: dict
+
+
+class SampleShipment(BaseModel):
+    sku: str
+    supplier: str
+    origin_region: str
+    distance_km: float
+    historical_avg_lead_time_days: float
+    order_quantity: int
+    unit_cost_usd: float
+    is_peak_season: bool
+    actual_delay_days: float

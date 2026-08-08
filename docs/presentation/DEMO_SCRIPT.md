@@ -44,10 +44,10 @@ python week1/demo_model.py
 
 **Say while the table prints:**
 
-1. **Reliable / off-peak** — “This is our calm baseline.”
-2. **Same supplier / peak** — “I only flipped peak season. Risk goes up — the model learned seasonality.”
-3. **Risky supplier** — “CIPLA / Aurobindo on the Asia→Africa corridor have historically worse delays.”
-4. **Risky + peak** — “Worst case. Highest days and late probability.”
+1. **Dataset banner** — “Loaded USAID SCMS — ~10k real shipments, not fake rows.”
+2. **Demo A (low-delay vendor)** — “Calm baseline from the open extract.”
+3. **Demo B · same supplier / peak** — “Only seasonality flipped.”
+4. **Demo C (higher-delay vendor)** — “CIPLA-class corridor risk shows up as higher days / probability.”
 
 Optional deepen:
 
@@ -63,16 +63,24 @@ python week2/demo_prescribe.py
 
 Open **http://127.0.0.1:8000/ui/**
 
-### Click the demo buttons (do not type)
+### First — show the real dataset (30 sec)
 
-1. Click **Demo A · Reliable / off-peak**  
+Point at the top panel:
+
+1. **Shipments / suppliers / late rate** — “This is USAID SCMS open data, not fake rows.”
+2. **EDA charts** — delay distribution + supplier chart from the same extract.
+3. **Sample rows** — optional: click **Run model** on one delayed row.
+
+### Then — click the demo buttons (do not type)
+
+1. Click **Demo A** (low-delay real vendor)  
    → Point at the big delay number and the green risk bar (should be lower).
 
 2. Click **Demo B · Same supplier / peak**  
-   → “Only seasonality changed — watch the risk rise.”
+   → “Only seasonality changed.”
 
-3. Click **Demo C · Risky supplier / peak**  
-   → “Highest risk. Now look at the four option cards.”
+3. Click **Demo C** (higher-delay real vendor, e.g. CIPLA)  
+   → “Highest risk in this trio. Now look at the four option cards.”
 
 ### Close the loop
 

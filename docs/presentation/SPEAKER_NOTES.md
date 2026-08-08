@@ -42,20 +42,25 @@ Name A/B/C/D. Emphasize:
 
 Map weeks to layers. Mention tech stack only at the bottom line.
 
-## Slide 7 — Data (45 sec)
+## Slide 7 — Real datasets (60 sec)
 
-> “We ingest ~10k real USAID SCMS shipments (optional UCI Cargo 2000) into the shipments table.  
-> Delay labels come from scheduled vs actual delivery — about 10% are late beyond 3 days, with a long tail.”
+> “Two public sources. USAID SCMS is the default ~10k health-commodity shipments.  
+> UCI Cargo 2000 is the ~3.9k freight set that replaces the old fake 4k rows.  
+> Both live under `datasets/` and seed the shipments table.”
 
-## Slides 8–9 — EDA (60–90 sec)
+## Slide 8 — Training extract (45 sec)
+
+> “On SCMS we see ~10k rows, 73 suppliers, about 10% late beyond 3 days, with a long tail.”
+
+## Slides 9–10 — EDA (60–90 sec)
 
 Show charts:
 
 1. Distribution — “most shipments are on time; the long tail is what hurts.”
-2. By supplier — “CIPLA and Aurobindo sit higher on the Asia→Africa corridor; Trinity Biotech is near-zero.”
+2. By supplier — “CIPLA and Aurobindo sit higher on the Asia→Africa corridor; Trinity / BMS are near-zero.”
 3. Peak season — “real seasonality can differ from intuition — always check the data.”
 
-## Slide 10 — Model (60 sec)
+## Slide 11 — Model (60 sec)
 
 > “Two XGBoost models share one feature builder so training and live inference can’t drift apart.  
 > Classifier: chance of a meaningful delay. Regressor: how many days.  

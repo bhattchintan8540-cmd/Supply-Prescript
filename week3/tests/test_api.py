@@ -125,3 +125,30 @@ def test_dashboard_is_served(client):
     resp = client.get("/ui/", follow_redirects=True)
     assert resp.status_code == 200
     assert "SupplyPrescript" in resp.text
+    assert "Real training dataset" in resp.text
+
+
+def test_dataset_summary_endpoint(client):
+    resp = client.get("/dataset/summary")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "available" in body
+    assert "n_rows" in body
+    assert "sources" in body
+    if body["available"]:
+        assert body["n_rows"] > 0
+        assert body["n_suppliers"] > 0
+
+
+def test_dataset_demos_and_samples(client):
+    demos = client.get("/dataset/demos")
+    assert demos.status_code == 200
+    assert isinstance(demos.json(), list)
+
+    samples = client.get("/dataset/samples?limit=5")
+    assert samples.status_code == 200
+    rows = samples.json()
+    assert isinstance(rows, list)
+    if rows:
+        assert "supplier" in rows[0]
+        assert "actual_delay_days" in rows[0]

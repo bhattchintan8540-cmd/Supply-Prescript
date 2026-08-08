@@ -1,8 +1,8 @@
 """
 End-to-end demo: model prediction + four prescribed options.
 
-Useful when you cannot share a browser screen but still want to show
-the full predict → prescribe story in the terminal.
+Uses a high-delay shipment from the real open extract when available
+so the terminal story matches the dashboard Demo C path.
 
     python week2/demo_prescribe.py
 """
@@ -13,11 +13,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, MODEL_PATH
+from week1.config import MODEL_PATH
+from week1.dataset_service import dataset_summary, demo_scenarios_from_data
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
 
-DEMO_SHIPMENT = {
+FALLBACK_SHIPMENT = {
     "sku": "ARV-GENERIC-TENOFOVIR-DISOPROXIL-FUMARAT",
     "supplier": "CIPLA LIMITED",
     "origin_region": "Asia Pacific",
@@ -29,22 +30,49 @@ DEMO_SHIPMENT = {
 }
 
 
+def _demo_shipment() -> tuple[dict, float, int]:
+    demos = demo_scenarios_from_data()
+    if demos:
+        risky = next((d for d in demos if d["id"] == "risky"), demos[-1])
+        values = risky["values"]
+        shipment = {
+            k: values[k]
+            for k in (
+                "sku",
+                "supplier",
+                "origin_region",
+                "distance_km",
+                "historical_avg_lead_time_days",
+                "order_quantity",
+                "unit_cost_usd",
+                "is_peak_season",
+            )
+        }
+        budget = float(values.get("budget_cap_usd") or 95_000)
+        max_delay = int(values.get("max_acceptable_delay_days") or 5)
+        return shipment, budget, max_delay
+    return FALLBACK_SHIPMENT, 95_000, 5
+
+
 def main() -> None:
     if not MODEL_PATH.exists():
         raise SystemExit(f"Train the model first: python week1/train_model.py\nMissing {MODEL_PATH}")
 
     model = DelayModel.load(MODEL_PATH)
-    days, prob = model.predict_one(DEMO_SHIPMENT)
+    shipment, budget, max_delay = _demo_shipment()
+    days, prob = model.predict_one(shipment)
     days, prob = round(days, 1), round(prob, 3)
-
-    budget = 95_000
-    max_delay = 5
+    summary = dataset_summary()
 
     print()
-    print("SupplyPrescript — predict + prescribe demo")
+    print("SupplyPrescript — predict + prescribe demo (real open data)")
     print("=" * 64)
+    if summary.get("available"):
+        sources = ", ".join(s["label"] for s in summary.get("sources", []))
+        print(f"Dataset: {sources} · {summary['n_rows']:,} rows")
+        print()
     print("Shipment")
-    for key, value in DEMO_SHIPMENT.items():
+    for key, value in shipment.items():
         print(f"  {key}: {value}")
     print()
     print("Model prediction")
@@ -53,14 +81,14 @@ def main() -> None:
     print()
 
     options = pure_options(
-        unit_cost_usd=DEMO_SHIPMENT["unit_cost_usd"],
-        order_quantity=DEMO_SHIPMENT["order_quantity"],
+        unit_cost_usd=shipment["unit_cost_usd"],
+        order_quantity=shipment["order_quantity"],
         predicted_delay_days=days,
         budget_cap_usd=budget,
     )
     blend = solve_optimal_allocation(
-        unit_cost_usd=DEMO_SHIPMENT["unit_cost_usd"],
-        order_quantity=DEMO_SHIPMENT["order_quantity"],
+        unit_cost_usd=shipment["unit_cost_usd"],
+        order_quantity=shipment["order_quantity"],
         predicted_delay_days=days,
         budget_cap_usd=budget,
         max_acceptable_delay_days=max_delay,
@@ -91,8 +119,8 @@ def main() -> None:
             ]
             print(f"         split: {', '.join(parts)}")
     print()
-    print("Say out loud: the model flagged peak-season risk; the optimizer")
-    print("then finds the cheapest mix that still respects the delay ceiling.")
+    print("Say out loud: the model scored this real shipment from the open")
+    print("extract; the optimizer then finds the cheapest mix under the delay ceiling.")
     print()
 
 

@@ -221,10 +221,10 @@
       <div class="stack">
         <div class="card accent"><h3>1. The business problem</h3><p class="muted">Why late shipments hurt — and why reacting too late is expensive.</p></div>
         <div class="card accent"><h3>2. Solution & architecture</h3><p class="muted">The full closed loop in plain English.</p></div>
-        <div class="card accent"><h3>3. Week-by-week build</h3><p class="muted">Data → Model → Optimizer → API → Retrain.</p></div>
+        <div class="card accent"><h3>3. Week-by-week build</h3><p class="muted">Real open data → Model → Optimizer → API → Retrain.</p></div>
       </div>
       <div class="stack">
-        <div class="card accent"><h3>4. Live demo path</h3><p class="muted">Submit a shipment, pick an option, close the loop.</p></div>
+        <div class="card accent"><h3>4. Live demo path</h3><p class="muted">Show the dataset panel, run a real shipment, close the loop.</p></div>
         <div class="card accent"><h3>5. Results & skills</h3><p class="muted">Metrics, tools, and what this proves.</p></div>
         <div class="card accent"><h3>6. Q&amp;A</h3><p class="muted">Questions welcome at the end.</p></div>
       </div>
@@ -286,9 +286,9 @@
     <table>
       <thead><tr><th>Week</th><th>Component</th><th>Role</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>Mock data + EDA + XGBoost</td><td>Learn delay risk from history</td></tr>
+        <tr><td>1</td><td>Real open data + EDA + XGBoost</td><td>Learn delay risk from USAID SCMS / UCI history</td></tr>
         <tr><td>2</td><td>Cost formulas + PuLP + UI</td><td>Turn prediction into options</td></tr>
-        <tr><td>3</td><td>FastAPI + decisions DB</td><td>Write-back, outcomes, ROI</td></tr>
+        <tr><td>3</td><td>FastAPI + decisions DB</td><td>Write-back, outcomes, ROI + dataset panel</td></tr>
         <tr><td>4</td><td>Retrain trigger</td><td>If drift is high, refit the model</td></tr>
       </tbody>
     </table>
@@ -296,22 +296,54 @@
   </section>
 
   <!-- 7 -->
-  <section class="slide" data-title="Week 1 data">
-    <p class="eyebrow">Week 1 · Data</p>
-    <h2>What the history looks like</h2>
-    <div class="grid-3">
-      <div class="card"><div class="metric">~10k</div><div class="metric-label">USAID SCMS shipments</div></div>
-      <div class="card"><div class="metric">5</div><div class="metric-label">suppliers / regions</div></div>
-      <div class="card"><div class="metric">45.8%</div><div class="metric-label">late &gt; 3 days</div></div>
+  <section class="slide" data-title="Real datasets">
+    <p class="eyebrow">Week 1 · Real open data</p>
+    <h2>Two public shipment sources</h2>
+    <div class="grid-2">
+      <div class="card accent">
+        <h3>USAID SCMS (default)</h3>
+        <div class="metric">10,307</div>
+        <div class="metric-label">mapped shipments</div>
+        <ul>
+          <li>PEPFAR health-commodity delivery history</li>
+          <li>73 vendors · 89 SKUs · 5 origin regions</li>
+          <li>Delay = scheduled vs actual delivery</li>
+          <li>File: <code>datasets/usaid_scms_shipments.csv</code></li>
+        </ul>
+      </div>
+      <div class="card accent">
+        <h3>UCI Cargo 2000</h3>
+        <div class="metric">3,942</div>
+        <div class="metric-label">freight process instances</div>
+        <ul>
+          <li>UCI ML Repository air-freight events</li>
+          <li>~3.9k real legs (replaces the old fake 4k)</li>
+          <li>Delay from planned vs effective minutes</li>
+          <li>File: <code>datasets/uci_c2k_shipments.csv</code></li>
+        </ul>
+      </div>
     </div>
-    <ul>
-      <li>Peak season (Nov–Dec) adds delay</li>
-      <li>Real open data (USAID SCMS / UCI Cargo 2000) with vendor & corridor risk</li>
-      <li>Features: distance, lead time, quantity, unit cost, peak flag, supplier, region, SKU</li>
-    </ul>
+    <p class="muted" style="margin-top:1rem">Both map into one schema and seed the SQLAlchemy <code>shipments</code> table. Combined extract: <code>datasets/combined_shipments.csv</code> (~14k).</p>
   </section>
 
   <!-- 8 -->
+  <section class="slide" data-title="Week 1 data">
+    <p class="eyebrow">Week 1 · Training extract</p>
+    <h2>What the history looks like</h2>
+    <div class="grid-3">
+      <div class="card"><div class="metric">~10k</div><div class="metric-label">USAID SCMS shipments (default)</div></div>
+      <div class="card"><div class="metric">73</div><div class="metric-label">real suppliers</div></div>
+      <div class="card"><div class="metric">~9.7%</div><div class="metric-label">late &gt; 3 days</div></div>
+    </div>
+    <ul>
+      <li>Long-tail delays (mean ~2.5d, some shipments &gt; 100d late)</li>
+      <li>Vendor &amp; corridor risk (e.g. CIPLA / Aurobindo vs Trinity Biotech)</li>
+      <li>Features: distance, lead time, quantity, unit cost, peak flag, supplier, region, SKU</li>
+      <li>Dashboard shows this live via <code>GET /dataset/summary</code></li>
+    </ul>
+  </section>
+
+  <!-- 9 -->
   <section class="slide" data-title="EDA charts">
     <p class="eyebrow">Week 1 · EDA</p>
     <h2>Evidence before modeling</h2>
@@ -319,18 +351,18 @@
       <img class="figure" src="../figures/delay_distribution.png" alt="Delay distribution" />
       <img class="figure" src="../figures/delay_by_supplier.png" alt="Delay by supplier" />
     </div>
-    <p class="muted">Left: delay distribution + 3-day late threshold. Right: mean delay by supplier.</p>
-  </section>
-
-  <!-- 9 -->
-  <section class="slide" data-title="Peak season">
-    <p class="eyebrow">Week 1 · Insight</p>
-    <h2>Peak season is a real driver</h2>
-    <img class="figure" src="../figures/peak_season_effect.png" alt="Peak season effect" />
-    <p class="muted" style="margin-top:0.75rem">Off-peak mean ~2.7 days vs peak ~5.5 days — so <span class="tag">is_peak_season</span> must be in the model.</p>
+    <p class="muted">Left: delay distribution + 3-day late threshold on real SCMS data. Right: highest-delay suppliers (n≥30).</p>
   </section>
 
   <!-- 10 -->
+  <section class="slide" data-title="Peak season">
+    <p class="eyebrow">Week 1 · Insight</p>
+    <h2>Always validate seasonality on real data</h2>
+    <img class="figure" src="../figures/peak_season_effect.png" alt="Peak season effect" />
+    <p class="muted" style="margin-top:0.75rem">On this SCMS extract, off-peak mean delay is higher than Nov–Dec in some regions — so we keep <span class="tag">is_peak_season</span> in the model and let the data decide the direction.</p>
+  </section>
+
+  <!-- 11 -->
   <section class="slide" data-title="Model">
     <p class="eyebrow">Week 1 · Predictive model</p>
     <h2>Two models, one feature set</h2>
@@ -338,18 +370,18 @@
       <div class="card accent">
         <h3>Classifier</h3>
         <p>Probability the delay is meaningful (&gt; 3 days).</p>
-        <p><strong>AUC ≈ 0.79</strong></p>
+        <p><strong>AUC ≈ 0.80</strong> on held-out SCMS</p>
       </div>
       <div class="card accent">
         <h3>Regressor</h3>
         <p>Expected delay in days.</p>
-        <p><strong>MAE ≈ 1.87 days</strong></p>
+        <p><strong>MAE ≈ 4.2 days</strong> (long-tail real delays)</p>
       </div>
     </div>
-    <p style="margin-top:1rem">Why both? “85% chance of a moderate delay” and “guaranteed 1-day slip” need different prescriptions.</p>
+    <p style="margin-top:1rem">Why both? “85% chance of a moderate delay” and “guaranteed 1-day slip” need different prescriptions. Metrics refresh live on the dashboard via <code>/model/info</code>.</p>
   </section>
 
-  <!-- 11 -->
+  <!-- 12 -->
   <section class="slide" data-title="Week 2">
     <p class="eyebrow">Week 2 · Prescribe</p>
     <h2>From forecast to action</h2>
@@ -374,23 +406,24 @@
     <p class="muted" style="margin-top:1rem">Governance check in tests: full allocation, budget respected when feasible, delay ceiling held.</p>
   </section>
 
-  <!-- 12 -->
+  <!-- 13 -->
   <section class="slide" data-title="Week 3">
-    <p class="eyebrow">Week 3 · Closed loop</p>
+    <p class="eyebrow">Week 3 · Closed loop + dashboard</p>
     <h2>API that operations can use</h2>
     <table>
       <thead><tr><th>Endpoint</th><th>What it does</th></tr></thead>
       <tbody>
-        <tr><td><code>POST /prescribe</code></td><td>Prediction + 4 options</td></tr>
-        <tr><td><code>POST /decisions</code></td><td>Write-back: save the human choice</td></tr>
-        <tr><td><code>PATCH /decisions/{id}/outcome</code></td><td>Log actual cost & delay</td></tr>
-        <tr><td><code>GET /decisions/roi</code></td><td>Predicted vs actual, on-budget rate</td></tr>
+        <tr><td><code>GET /dataset/summary</code></td><td>Real dataset stats (rows, suppliers, late rate, files)</td></tr>
+        <tr><td><code>GET /dataset/demos</code></td><td>Demo A/B/C built from real low/high-delay vendors</td></tr>
+        <tr><td><code>POST /prescribe</code></td><td>Prediction + 4 options on a real shipment</td></tr>
+        <tr><td><code>POST /decisions</code> · <code>PATCH …/outcome</code></td><td>Write-back + close the loop</td></tr>
+        <tr><td><code>GET /decisions/roi</code> · <code>/model/info</code></td><td>ROI + MAE/AUC for the live deck</td></tr>
       </tbody>
     </table>
-    <p style="margin-top:1rem">Dashboard: <strong>http://127.0.0.1:8000/ui/</strong></p>
+    <p style="margin-top:1rem">Dashboard: <strong>http://127.0.0.1:8000/ui/</strong> — dataset panel, EDA charts, sample rows, then prescribe.</p>
   </section>
 
-  <!-- 13 -->
+  <!-- 14 -->
   <section class="slide" data-title="Week 4">
     <p class="eyebrow">Week 4 · Continuous learning</p>
     <h2>Close the learning loop</h2>
@@ -403,72 +436,73 @@
       <div class="card accent">
         <h3>Retrain trigger</h3>
         <p><code>python week4/retrain.py</code></p>
-        <p>Point cron / GitHub Action at it weekly.</p>
+        <p>Re-fits on the real shipments table / CSV extract.</p>
       </div>
     </div>
     <p class="muted" style="margin-top:1rem">Honest scope: demo re-fits on shipment history; production would fold resolved decisions into training via a shipment FK.</p>
   </section>
 
-  <!-- 14 -->
+  <!-- 15 -->
   <section class="slide" data-title="Demo">
     <p class="eyebrow">Live demo</p>
-    <h2>Show the model in two modes</h2>
+    <h2>Show the real dataset in two modes</h2>
     <div class="grid-2">
       <div class="card accent">
         <h3>A · Terminal (2 min)</h3>
         <p><code>python week1/demo_model.py</code></p>
-        <p>Four scenarios: reliable → peak → risky → worst case.</p>
+        <p>Prints dataset source + rows, then low-risk vs high-risk vendors from the extract.</p>
+        <p style="margin-top:0.5rem"><code>python week2/demo_prescribe.py</code></p>
       </div>
       <div class="card accent">
         <h3>B · Dashboard (4 min)</h3>
         <p><code>http://127.0.0.1:8000/ui/</code></p>
-        <p>Click <strong>Demo A / B / C</strong> → Execute → Log outcome → ROI.</p>
+        <p>Show dataset panel → EDA charts → click <strong>Demo A / B / C</strong> (live from data) → Execute → Log outcome → ROI.</p>
       </div>
     </div>
-    <p class="muted" style="margin-top:1rem">Script: <code>docs/presentation/DEMO_SCRIPT.md</code>. Backup: EDA figures + this deck.</p>
+    <p class="muted" style="margin-top:1rem">Script: <code>docs/presentation/DEMO_SCRIPT.md</code>. Datasets folder: <code>datasets/</code>.</p>
   </section>
 
-  <!-- 15 -->
+  <!-- 16 -->
   <section class="slide" data-title="Results">
     <p class="eyebrow">Results</p>
     <h2>What we can show today</h2>
     <div class="grid-3">
-      <div class="card"><div class="metric">~1.87d</div><div class="metric-label">MAE on held-out delays</div></div>
-      <div class="card"><div class="metric">0.79</div><div class="metric-label">AUC late classifier</div></div>
-      <div class="card"><div class="metric">15</div><div class="metric-label">automated tests passing</div></div>
+      <div class="card"><div class="metric">~4.2d</div><div class="metric-label">MAE on held-out SCMS delays</div></div>
+      <div class="card"><div class="metric">0.80</div><div class="metric-label">AUC late classifier</div></div>
+      <div class="card"><div class="metric">20+</div><div class="metric-label">automated tests passing</div></div>
     </div>
     <ul>
+      <li>Real USAID / UCI data in DB, dashboard, and model demos</li>
       <li>End-to-end loop works: prescribe → decide → outcome → ROI</li>
       <li>Optimizer respects budget / delay constraints when feasible</li>
-      <li>Portfolio-ready GitHub structure (weeks, docs, notebook, figures)</li>
     </ul>
   </section>
 
-  <!-- 16 -->
+  <!-- 17 -->
   <section class="slide" data-title="Skills">
     <p class="eyebrow">Skills demonstrated</p>
     <h2>What this project proves</h2>
     <div class="grid-2">
       <ul>
-        <li>EDA & storytelling with charts</li>
+        <li>Real open-data ingest into a relational store</li>
+        <li>EDA &amp; storytelling with charts</li>
         <li>Feature engineering for train + live inference</li>
         <li>Supervised ML (classification + regression)</li>
-        <li>Prescriptive analytics / linear programming</li>
       </ul>
       <ul>
-        <li>API design & write-back patterns</li>
+        <li>Prescriptive analytics / linear programming</li>
+        <li>API design &amp; write-back patterns</li>
         <li>Decision ROI / model monitoring mindset</li>
-        <li>Testing & reproducible project layout</li>
-        <li>Communicating analytics to non-ML stakeholders</li>
+        <li>Dashboard that surfaces the training dataset</li>
       </ul>
     </div>
   </section>
 
-  <!-- 17 -->
+  <!-- 18 -->
   <section class="slide title-slide" data-title="Q&A">
     <p class="eyebrow">Thank you</p>
     <h1>Questions?</h1>
-    <p class="subtitle">Repo: Supply-Prescript · Docs: PROJECT_BRIEF.md · STEP_BY_STEP.md · This deck: docs/presentation/slides.html</p>
+    <p class="subtitle">Repo: Supply-Prescript · Datasets: datasets/ · Docs: PROJECT_BRIEF.md · STEP_BY_STEP.md · Deck: docs/presentation/slides.html</p>
     <p style="margin-top:2rem;opacity:0.85">Demo: <code>uvicorn week3.main:app --reload</code> → http://127.0.0.1:8000/ui/</p>
   </section>
 

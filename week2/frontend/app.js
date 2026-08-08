@@ -12,15 +12,19 @@ const optionsCards = document.getElementById("options-cards");
 const roiSummaryEl = document.getElementById("roi-summary");
 const decisionsTbody = document.querySelector("#decisions-table tbody");
 const scenarioButtons = document.getElementById("scenario-buttons");
+const datasetSummaryEl = document.getElementById("dataset-summary");
+const modelMetricsEl = document.getElementById("model-metrics");
+const samplesTbody = document.querySelector("#samples-table tbody");
+const headerBadge = document.getElementById("header-dataset-badge");
 
-let lastPrescription = null; // stashed so "Execute Decision" has everything it needs to POST
+let lastPrescription = null;
 
-// One-click stories for live demos — fill the form, then auto-prescribe.
-const DEMO_SCENARIOS = [
+// Fallback demos if /dataset/demos is empty (offline / no extract yet).
+const FALLBACK_SCENARIOS = [
   {
     id: "safe",
-    label: "Demo A · Trinity / Europe",
-    blurb: "Low historical delay",
+    label: "Demo A · Trinity Biotech",
+    blurb: "Low historical delay (Europe)",
     values: {
       sku: "HRDT-UNI-GOLD-HIV-1-2",
       supplier: "Trinity Biotech, Plc",
@@ -79,6 +83,136 @@ function fillForm(values) {
   }
 }
 
+function statCard(label, value, detail = "") {
+  return `
+    <div class="stat-card">
+      <div class="label">${label}</div>
+      <div class="value">${value}</div>
+      ${detail ? `<div class="detail">${detail}</div>` : ""}
+    </div>
+  `;
+}
+
+async function loadDatasetPanel() {
+  const [summaryResp, modelResp, demosResp, samplesResp] = await Promise.all([
+    fetch(`${API_BASE}/dataset/summary`),
+    fetch(`${API_BASE}/model/info`),
+    fetch(`${API_BASE}/dataset/demos`),
+    fetch(`${API_BASE}/dataset/samples?limit=12`),
+  ]);
+
+  if (summaryResp.ok) {
+    const summary = await summaryResp.json();
+    renderDatasetSummary(summary);
+  } else {
+    datasetSummaryEl.innerHTML = `<div class="sources-list">${statCard("Dataset", "Unavailable", "Is the API running?")}</div>`;
+    headerBadge.textContent = "Dataset unavailable";
+  }
+
+  if (modelResp.ok) {
+    renderModelMetrics(await modelResp.json());
+  }
+
+  let scenarios = FALLBACK_SCENARIOS;
+  if (demosResp.ok) {
+    const live = await demosResp.json();
+    if (Array.isArray(live) && live.length) scenarios = live;
+  }
+  renderScenarios(scenarios);
+
+  if (samplesResp.ok) {
+    renderSamples(await samplesResp.json());
+  }
+}
+
+function renderDatasetSummary(summary) {
+  if (!summary.available) {
+    headerBadge.textContent = "No dataset loaded — run ingest_real_data.py";
+    datasetSummaryEl.innerHTML = `
+      <div class="sources-list">
+        <strong>${summary.message}</strong>
+        <p class="hint" style="margin:0.4rem 0 0">Then refresh this page.</p>
+      </div>`;
+    return;
+  }
+
+  const sourceNames = (summary.sources || []).map((s) => s.label).join(" · ") || "Training extract";
+  headerBadge.textContent = `Live on ${sourceNames} · ${summary.n_rows.toLocaleString()} rows`;
+
+    datasetSummaryEl.innerHTML = [
+    statCard("Shipments", summary.n_rows.toLocaleString(), summary.message),
+    statCard("Suppliers", summary.n_suppliers.toLocaleString()),
+    statCard("SKUs", summary.n_skus.toLocaleString()),
+    statCard("Regions", summary.n_regions.toLocaleString(), (summary.regions || []).join(", ")),
+    statCard("Late > 3d", summary.late_rate_pct != null ? `${summary.late_rate_pct}%` : "—"),
+    statCard("Mean delay", summary.mean_delay_days != null ? `${summary.mean_delay_days}d` : "—",
+      summary.median_delay_days != null ? `median ${summary.median_delay_days}d` : ""),
+    `<div class="sources-list"><strong>Loaded source</strong><ul>${
+      (summary.sources || [])
+        .map((s) => `<li>${s.label} (${Number(s.n_rows).toLocaleString()} rows)</li>`)
+        .join("")
+    }</ul><strong style="display:block;margin-top:0.55rem">Dataset packages in repo</strong><ul>${
+      (summary.files || [])
+        .map((f) => `<li>${f.label}: <code>${f.path || f.key}</code> (${Number(f.n_rows).toLocaleString()} rows)</li>`)
+        .join("") || "<li>Run ingest to populate datasets/</li>"
+    }</ul></div>`,
+  ].join("");
+}
+
+function renderModelMetrics(info) {
+  if (!info || !info.model_loaded) {
+    modelMetricsEl.innerHTML = statCard("Model", "Not loaded", "Run week1/train_model.py");
+    return;
+  }
+  modelMetricsEl.innerHTML = [
+    statCard("Model", "Ready", info.dataset_message || "Trained on real extract"),
+    statCard("Train rows", info.n_train != null ? Number(info.n_train).toLocaleString() : "—",
+      info.n_test != null ? `held out ${Number(info.n_test).toLocaleString()}` : ""),
+    statCard("MAE", info.mae_days != null ? `${info.mae_days}d` : "—"),
+    statCard("AUC", info.auc != null ? info.auc : "—"),
+    info.top_features && info.top_features.length
+      ? `<div class="sources-list"><strong>Top features</strong><ul>${
+          info.top_features.slice(0, 5).map((f) => `<li>${f.feature} <span class="detail">(${f.importance})</span></li>`).join("")
+        }</ul></div>`
+      : "",
+  ].join("");
+}
+
+function renderSamples(rows) {
+  samplesTbody.innerHTML = "";
+  if (!rows.length) {
+    samplesTbody.innerHTML = `<tr><td colspan="7">No sample rows — ingest the real dataset first.</td></tr>`;
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.supplier}</td>
+      <td>${row.sku}</td>
+      <td>${row.origin_region}</td>
+      <td>${Number(row.order_quantity).toLocaleString()}</td>
+      <td>$${Number(row.unit_cost_usd).toFixed(2)}</td>
+      <td>${row.actual_delay_days}d</td>
+      <td></td>
+    `;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "secondary";
+    btn.textContent = "Run model";
+    btn.addEventListener("click", async () => {
+      fillForm({
+        ...row,
+        budget_cap_usd: form.elements.budget_cap_usd.value || 95000,
+        max_acceptable_delay_days: form.elements.max_acceptable_delay_days.value || 5,
+      });
+      await runPrescription();
+      predictionSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    tr.lastElementChild.appendChild(btn);
+    samplesTbody.appendChild(tr);
+  });
+}
+
 async function runPrescription() {
   const data = new FormData(form);
   const shipment = {
@@ -101,7 +235,7 @@ async function runPrescription() {
   });
 
   if (!resp.ok) {
-    alert(`Prescription request failed: ${resp.status}. Is the API running?`);
+    alert(`Prescription request failed: ${resp.status}. Is the API running with a trained model?`);
     return;
   }
   const body = await resp.json();
@@ -110,9 +244,9 @@ async function runPrescription() {
   renderOptions(body);
 }
 
-function renderScenarios() {
+function renderScenarios(scenarios) {
   scenarioButtons.innerHTML = "";
-  DEMO_SCENARIOS.forEach((scenario) => {
+  scenarios.forEach((scenario) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "scenario-btn";
@@ -142,7 +276,7 @@ function renderPrediction(body) {
     <div class="risk-bar" aria-hidden="true">
       <div class="risk-fill" style="width:${pct}%"></div>
     </div>
-    <p class="muted">Budget cap $${body.budget_cap_usd.toLocaleString()}</p>
+    <p class="muted">Budget cap $${body.budget_cap_usd.toLocaleString()} · model trained on the real open extract above</p>
   `;
   predictionSection.hidden = false;
 }
@@ -256,5 +390,5 @@ async function logOutcome(decisionId, predictedCost) {
 }
 
 document.getElementById("refresh-roi").addEventListener("click", loadDecisions);
-renderScenarios();
+loadDatasetPanel();
 loadDecisions();

@@ -30,12 +30,14 @@ from sqlalchemy.orm import Session
 from week1 import models
 from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, METRICS_PATH, MODEL_PATH, ROOT_DIR
 from week1.database import get_session, init_db
+from week1.dataset_service import dataset_summary, demo_scenarios_from_data, sample_shipments
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
 
 from . import schemas
 
 FRONTEND_DIR = ROOT_DIR / "week2" / "frontend"
+FIGURES_DIR = ROOT_DIR / "docs" / "figures"
 
 
 @asynccontextmanager
@@ -87,6 +89,7 @@ def health() -> dict:
 @app.get("/model/info", response_model=schemas.ModelInfo)
 def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
     """Return held-out training metrics so presenters can quote MAE/AUC live."""
+    summary = dataset_summary()
     payload: dict = {
         "model_loaded": True,
         "model_path": str(MODEL_PATH),
@@ -95,6 +98,8 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
         "n_train": None,
         "n_test": None,
         "top_features": [],
+        "dataset_rows": summary.get("n_rows") or None,
+        "dataset_message": summary.get("message"),
     }
     if METRICS_PATH.exists():
         import json
@@ -109,6 +114,25 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
         # Fallback: compute top features from the loaded model artifact.
         payload["top_features"] = model.feature_importance(top_n=5)
     return schemas.ModelInfo(**payload)
+
+
+@app.get("/dataset/summary", response_model=schemas.DatasetSummary)
+def get_dataset_summary() -> schemas.DatasetSummary:
+    """Dashboard panel: which real open dataset is loaded and key stats."""
+    return schemas.DatasetSummary(**dataset_summary())
+
+
+@app.get("/dataset/demos", response_model=list[schemas.DemoScenario])
+def get_dataset_demos() -> list[schemas.DemoScenario]:
+    """Demo A/B/C built from real suppliers in the training extract."""
+    return [schemas.DemoScenario(**row) for row in demo_scenarios_from_data()]
+
+
+@app.get("/dataset/samples", response_model=list[schemas.SampleShipment])
+def get_dataset_samples(limit: int = 12) -> list[schemas.SampleShipment]:
+    """Sample rows from the real extract for the dashboard table."""
+    limit = max(1, min(limit, 50))
+    return [schemas.SampleShipment(**row) for row in sample_shipments(limit=limit)]
 
 
 @app.post("/predict", response_model=schemas.DelayPrediction)
@@ -240,5 +264,8 @@ def decisions_roi(session: Session = Depends(get_session)):
 
 
 # Mount last so /ui never shadows API routes above.
+if FIGURES_DIR.exists():
+    app.mount("/figures", StaticFiles(directory=FIGURES_DIR), name="figures")
+
 if FRONTEND_DIR.exists():
     app.mount("/ui", StaticFiles(directory=FRONTEND_DIR, html=True), name="ui")

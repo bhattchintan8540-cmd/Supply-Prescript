@@ -10,39 +10,87 @@
   <header>
     <h1>SupplyPrescript</h1>
     <p class="tagline">Predict the delay. Prescribe the fix. Track whether it actually worked.</p>
+    <p class="dataset-badge" id="header-dataset-badge">Loading real open dataset…</p>
   </header>
 
   <main>
+    <section id="dataset-section">
+      <h2>0. Real training dataset</h2>
+      <p class="hint">
+        Model + demos run on the open extracts in <code>datasets/</code>
+        (USAID SCMS and/or UCI Cargo 2000) — not synthetic mock rows.
+      </p>
+      <div id="dataset-summary" class="dataset-grid" aria-live="polite"></div>
+      <div id="model-metrics" class="dataset-grid model-metrics" aria-live="polite"></div>
+      <div class="eda-row" id="eda-row">
+        <figure>
+          <img src="/figures/delay_distribution.png" alt="Delay distribution from real shipments" />
+          <figcaption>Delay distribution</figcaption>
+        </figure>
+        <figure>
+          <img src="/figures/delay_by_supplier.png" alt="Mean delay by supplier" />
+          <figcaption>Mean delay by supplier</figcaption>
+        </figure>
+        <figure>
+          <img src="/figures/peak_season_effect.png" alt="Peak-season effect by region" />
+          <figcaption>Peak-season effect</figcaption>
+        </figure>
+      </div>
+      <h3 class="subhead">Sample rows from the loaded extract</h3>
+      <div class="table-wrap">
+        <table id="samples-table">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>SKU</th>
+              <th>Region</th>
+              <th>Qty</th>
+              <th>Unit $</th>
+              <th>Actual delay</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="shipment-form-section">
-      <h2>1. Shipment details</h2>
-      <p class="hint">Presentation tip: click a <strong>demo scenario</strong> below, then “Get prescription”.</p>
+      <h2>1. Run the model on a shipment</h2>
+      <p class="hint">
+        Presentation tip: click a <strong>demo scenario</strong> built from the real dataset,
+        or load any sample row above, then “Get prescription”.
+      </p>
       <div id="scenario-buttons" class="scenario-row" aria-label="Demo scenarios"></div>
       <form id="shipment-form">
         <div class="grid">
           <label>SKU
-            <input name="sku" value="MICROCHIP-A2" required />
+            <input name="sku" value="ARV-GENERIC-EFAVIRENZ" required />
           </label>
           <label>Supplier
-            <input name="supplier" value="NovaChip Manufacturing" required />
+            <input name="supplier" value="Aurobindo Pharma Limited" required />
           </label>
           <label>Origin region
             <select name="origin_region">
               <option>Asia Pacific</option>
               <option>Europe</option>
               <option>North America</option>
+              <option>Middle East</option>
+              <option>Africa</option>
+              <option>Latin America</option>
             </select>
           </label>
           <label>Distance (km)
-            <input name="distance_km" type="number" value="8800" required />
+            <input name="distance_km" type="number" value="8300" required />
           </label>
           <label>Historical avg lead time (days)
-            <input name="historical_avg_lead_time_days" type="number" value="16" required />
+            <input name="historical_avg_lead_time_days" type="number" value="120" required />
           </label>
           <label>Order quantity
-            <input name="order_quantity" type="number" value="6000" required />
+            <input name="order_quantity" type="number" value="11000" required />
           </label>
           <label>Unit cost (USD)
-            <input name="unit_cost_usd" type="number" step="0.01" value="14.2" required />
+            <input name="unit_cost_usd" type="number" step="0.0001" value="0.12" required />
           </label>
           <label>Peak season?
             <input name="is_peak_season" type="checkbox" />
