@@ -68,7 +68,12 @@ def _ensure_data() -> pd.DataFrame:
 
 
 def _verdict(metrics: dict) -> dict:
-    """Plain-language check: is the model doing better than baselines?"""
+    """Ruthless check: lift must be real, calibrated, and operationally sane.
+
+    Soft bars (AUC ≥ baseline, TP > 0, FPR ≤ 50%) were too weak for a system
+    that multiplies P(delay) into money. Failures here mean: do not trust the
+    model for prescriptions until fixed.
+    """
     auc = metrics.get("auc")
     baseline_auc = metrics.get("baseline_auc")
     mae = metrics.get("mae_days")
@@ -76,62 +81,136 @@ def _verdict(metrics: dict) -> dict:
     precision = metrics.get("precision") or 0.0
     recall = metrics.get("recall") or 0.0
     f1 = metrics.get("f1") or 0.0
+    brier = metrics.get("brier_score")
+    ece = metrics.get("ece")
     cm = metrics.get("confusion_matrix") or [[0, 0], [0, 0]]
     tn, fp = int(cm[0][0]), int(cm[0][1])
     fn, tp = int(cm[1][0]), int(cm[1][1])
+    n_pos = tp + fn
+    n_neg = tn + fp
 
     checks = []
     ok = True
+    warnings = []
 
     if auc is not None and baseline_auc is not None:
-        beat_auc = auc >= baseline_auc
+        beat_auc = auc >= baseline_auc + 0.02  # require meaningful lift, not noise
         checks.append(
             {
-                "check": "Classifier AUC vs supplier-rate baseline",
+                "check": "Classifier AUC ≥ baseline + 0.02",
                 "model": auc,
                 "baseline": baseline_auc,
                 "pass": beat_auc,
             }
         )
         ok = ok and beat_auc
-    if mae is not None and baseline_mae is not None:
-        beat_mae = mae <= baseline_mae
+
+    auc_boot = metrics.get("auc_lift_bootstrap") or {}
+    if auc_boot.get("significant") is not None:
+        sig = bool(auc_boot["significant"])
         checks.append(
             {
-                "check": "Regressor MAE vs supplier-mean baseline",
+                "check": "AUC lift bootstrap 95% CI excludes 0",
+                "model": auc_boot.get("lift"),
+                "ci": [auc_boot.get("ci_low"), auc_boot.get("ci_high")],
+                "pass": sig,
+            }
+        )
+        ok = ok and sig
+
+    if mae is not None and baseline_mae is not None:
+        # Require at least ~3% relative MAE improvement vs supplier mean.
+        relative = (baseline_mae - mae) / baseline_mae if baseline_mae else 0.0
+        beat_mae = mae <= baseline_mae and relative >= 0.03
+        checks.append(
+            {
+                "check": "Regressor MAE ≤ baseline with ≥3% relative lift",
                 "model": mae,
                 "baseline": baseline_mae,
+                "relative_lift": round(relative, 4),
                 "pass": beat_mae,
             }
         )
         ok = ok and beat_mae
 
-    # Sanity: model should find some true positives on the late class.
-    finds_late = tp > 0
-    checks.append({"check": "True positives > 0 on test set", "model": tp, "pass": finds_late})
+    mae_boot = metrics.get("mae_lift_bootstrap") or {}
+    if mae_boot.get("significant") is False:
+        warnings.append(
+            "MAE lift bootstrap CI crosses 0 — magnitude improvement may be noise."
+        )
+    elif mae_boot.get("significant") is True:
+        checks.append(
+            {
+                "check": "MAE lift bootstrap 95% CI excludes 0",
+                "model": mae_boot.get("lift"),
+                "ci": [mae_boot.get("ci_low"), mae_boot.get("ci_high")],
+                "pass": True,
+            }
+        )
+
+    # Recall on late class: missing a late shipment is the expensive FN.
+    recall_ok = recall >= 0.55 if n_pos else False
+    checks.append(
+        {
+            "check": "Recall (late class) ≥ 0.55",
+            "model": recall,
+            "pass": recall_ok,
+        }
+    )
+    ok = ok and recall_ok
+
+    finds_late = tp >= max(5, int(0.05 * n_pos)) if n_pos else False
+    checks.append(
+        {
+            "check": "True positives ≥ max(5, 5% of late shipments)",
+            "model": tp,
+            "pass": finds_late,
+        }
+    )
     ok = ok and finds_late
 
     false_alarm_rate = fp / (fp + tn) if (fp + tn) else None
     if false_alarm_rate is not None:
-        # Soft guard — flag if FP rate dominates (>50% of on-time called late).
-        fp_ok = false_alarm_rate <= 0.50
+        fp_ok = false_alarm_rate <= 0.35
         checks.append(
             {
-                "check": "False-positive rate among on-time shipments ≤ 50%",
+                "check": "False-positive rate among on-time ≤ 35%",
                 "model": round(false_alarm_rate, 3),
                 "pass": fp_ok,
             }
         )
         ok = ok and fp_ok
 
+    if brier is not None:
+        brier_ok = brier <= 0.22
+        checks.append({"check": "Brier score ≤ 0.22", "model": brier, "pass": brier_ok})
+        ok = ok and brier_ok
+
+    if ece is not None:
+        ece_ok = ece <= 0.12
+        checks.append({"check": "Expected calibration error (ECE) ≤ 0.12", "model": ece, "pass": ece_ok})
+        ok = ok and ece_ok
+
+    if metrics.get("probability_calibrated") is False:
+        warnings.append("Probabilities are NOT calibrated — unsafe for expected-cost decisions.")
+
+    if metrics.get("clf_reg_consistency_ok") is False:
+        warnings.append("Classifier/regressor disagree: predicted-late rows have low delay days.")
+        ok = False
+
+    weak = metrics.get("weak_segments_auc_lt_0_60") or {}
+    if any(weak.values()):
+        warnings.append(f"Weak segments (AUC<0.60): {weak}")
+
     return {
         "model_doing_right": ok,
         "summary": (
-            "Model is doing right vs baselines on the test hold-out."
+            "Model clears ruthless scientific gates vs baselines on the test hold-out."
             if ok
-            else "Model is NOT clearly beating baselines — review features/split."
+            else "Model FAILS one or more scientific gates — do not trust prescriptions yet."
         ),
         "checks": checks,
+        "warnings": warnings,
         "confusion_counts": {
             "true_negative": tn,
             "false_positive": fp,
@@ -141,6 +220,7 @@ def _verdict(metrics: dict) -> dict:
         "precision": precision,
         "recall": recall,
         "f1": f1,
+        "decision_threshold": metrics.get("decision_threshold"),
         "note": (
             "Metrics recover relationships programmed into synthetic data; "
             "they are not real-world supply-chain accuracy claims."
@@ -225,33 +305,57 @@ def write_process_markdown(path: Path, metrics: dict, verdict: dict) -> Path:
         f"- Model doing right: **{verdict['model_doing_right']}**",
         f"- Validation strategy: `{metrics.get('validation_strategy')}`",
         f"- Train / Val / Test: {metrics.get('n_train')} / {metrics.get('n_val')} / {metrics.get('n_test')}",
-        f"- Classifier AUC: {metrics.get('auc')} (baseline {metrics.get('baseline_auc')})",
-        f"- Regressor MAE (days): {metrics.get('mae_days')} (baseline {metrics.get('baseline_mae_days')})",
-        f"- Precision / Recall / F1: {metrics.get('precision')} / {metrics.get('recall')} / {metrics.get('f1')}",
+        f"- Classifier AUC / PR-AUC: {metrics.get('auc')} / {metrics.get('pr_auc')} "
+        f"(baseline AUC {metrics.get('baseline_auc')})",
+        f"- Regressor MAE / RMSE / R²: {metrics.get('mae_days')} / {metrics.get('rmse_days')} / "
+        f"{metrics.get('r2_days')} (baseline MAE {metrics.get('baseline_mae_days')})",
+        f"- Precision / Recall / F1 / Specificity: {metrics.get('precision')} / "
+        f"{metrics.get('recall')} / {metrics.get('f1')} / {metrics.get('specificity')}",
+        f"- Brier / ECE: {metrics.get('brier_score')} / {metrics.get('ece')}",
+        f"- Decision threshold (val-tuned): {metrics.get('decision_threshold')}",
+        f"- Probability calibrated: {metrics.get('probability_calibrated')}",
+        f"- AUC lift bootstrap: {metrics.get('auc_lift_bootstrap')}",
+        f"- MAE lift bootstrap: {metrics.get('mae_lift_bootstrap')}",
         "",
-        "### Confusion matrix counts (test set)",
-        "",
-        "| Cell | Meaning | Count |",
-        "|---|---|---|",
-        f"| **TN** | True Negative — correctly predicted on-time | {cm['true_negative']} |",
-        f"| **FP** | False Positive — predicted late, actually on-time | {cm['false_positive']} |",
-        f"| **FN** | False Negative — predicted on-time, actually late | {cm['false_negative']} |",
-        f"| **TP** | True Positive — correctly predicted late | {cm['true_positive']} |",
-        "",
-        "### Files in this folder",
-        "",
-        f"- `{CM_PNG}` — standard confusion matrix plot",
-        f"- `{CM_ANNOTATED_PNG}` — TP / FP / TN / FN annotated matrix",
-        f"- `{SUMMARY_JSON}` — metrics + verdict (machine-readable)",
-        f"- `{PROCESS_MD}` — this document",
-        "",
-        "### Note",
-        "",
-        verdict["note"],
-        "",
-        "Generated plots and CSVs are **gitignored** and are not committed to GitHub.",
+        "### Ruthless gates",
         "",
     ]
+    for check in verdict.get("checks", []):
+        mark = "PASS" if check.get("pass") else "FAIL"
+        lines.append(f"- [{mark}] {check.get('check')}: model={check.get('model')}")
+    if verdict.get("warnings"):
+        lines.append("")
+        lines.append("### Warnings")
+        lines.append("")
+        for w in verdict["warnings"]:
+            lines.append(f"- {w}")
+    lines.extend(
+        [
+            "",
+            "### Confusion matrix counts (test set)",
+            "",
+            "| Cell | Meaning | Count |",
+            "|---|---|---|",
+            f"| **TN** | True Negative — correctly predicted on-time | {cm['true_negative']} |",
+            f"| **FP** | False Positive — predicted late, actually on-time | {cm['false_positive']} |",
+            f"| **FN** | False Negative — predicted on-time, actually late | {cm['false_negative']} |",
+            f"| **TP** | True Positive — correctly predicted late | {cm['true_positive']} |",
+            "",
+            "### Files in this folder",
+            "",
+            f"- `{CM_PNG}` — standard confusion matrix plot",
+            f"- `{CM_ANNOTATED_PNG}` — TP / FP / TN / FN annotated matrix",
+            f"- `{SUMMARY_JSON}` — metrics + verdict (machine-readable)",
+            f"- `{PROCESS_MD}` — this document",
+            "",
+            "### Note",
+            "",
+            verdict["note"],
+            "",
+            "Generated plots and CSVs are **gitignored** and are not committed to GitHub.",
+            "",
+        ]
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines), encoding="utf-8")
     return path
@@ -301,19 +405,34 @@ def main() -> dict:
             k: metrics[k]
             for k in (
                 "validation_strategy",
+                "validation_used_for",
                 "n_train",
                 "n_val",
                 "n_test",
                 "auc",
+                "pr_auc",
                 "baseline_auc",
+                "auc_lift_vs_baseline",
+                "auc_lift_bootstrap",
                 "mae_days",
+                "rmse_days",
+                "r2_days",
                 "baseline_mae_days",
                 "mae_lift_vs_baseline",
+                "mae_lift_bootstrap",
                 "precision",
                 "recall",
                 "f1",
+                "specificity",
+                "npv",
+                "false_alarm_rate",
                 "brier_score",
+                "ece",
+                "decision_threshold",
+                "probability_calibrated",
                 "confusion_matrix",
+                "weak_segments_auc_lt_0_60",
+                "clf_reg_consistency_ok",
                 "data_is_synthetic",
             )
             if k in metrics
