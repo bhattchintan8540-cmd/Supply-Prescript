@@ -55,10 +55,13 @@ def test_model_info_endpoint(client):
     assert "model_path" in body
     # metrics.json may or may not exist in CI; either way the payload is valid
     assert "mae_days" in body
+    assert body.get("data_is_synthetic") is True
     assert isinstance(body.get("top_features", []), list)
 
 
 def test_predict_returns_a_prediction(client):
+    """Software correctness: probability is in [0, 1]. This does not
+    prove the probability is calibrated or analytically accurate."""
     resp = client.post("/predict", json=SAMPLE_SHIPMENT)
     assert resp.status_code == 200
     body = resp.json()
@@ -72,12 +75,15 @@ def test_prescribe_returns_four_options(client):
     body = resp.json()
     labels = {o["label"] for o in body["options"]}
     assert labels == {"Air Freight", "Secondary Supplier", "Delay Launch", "Optimizer Recommended Split"}
+    assert body["no_action_cost_usd"] is not None
+    assert body["delay_constraint_mode"] in {"operational_makespan", "weighted_average"}
 
 
-def test_full_decision_lifecycle_and_roi(client):
+def test_full_decision_lifecycle_cost_accuracy_and_roi(client):
     prescribe_resp = client.post("/prescribe", json={"shipment": SAMPLE_SHIPMENT})
     body = prescribe_resp.json()
-    chosen_label = body["options"][0]["label"]
+    # Choose an intervention (not Delay Launch) so ROI has a counterfactual gap.
+    chosen = next(o for o in body["options"] if o["label"] == "Air Freight")
 
     create_resp = client.post(
         "/decisions",
@@ -86,24 +92,34 @@ def test_full_decision_lifecycle_and_roi(client):
             "predicted_delay_days": body["prediction"]["predicted_delay_days"],
             "predicted_delay_probability": body["prediction"]["predicted_delay_probability"],
             "options": body["options"],
-            "chosen_option_label": chosen_label,
+            "chosen_option_label": chosen["label"],
             "budget_cap_usd": body["budget_cap_usd"],
+            "shipment_features": SAMPLE_SHIPMENT,
+            "no_action_cost_usd": body["no_action_cost_usd"],
         },
     )
     assert create_resp.status_code == 201
     decision = create_resp.json()
     assert decision["is_resolved"] is False
+    assert decision["no_action_cost_usd"] == body["no_action_cost_usd"]
 
+    # Actual cost slightly under the no-action baseline → positive avoided loss.
+    actual_cost = min(decision["predicted_cost_usd"] * 1.05, body["no_action_cost_usd"] * 0.9)
     outcome_resp = client.patch(
         f"/decisions/{decision['id']}/outcome",
-        json={"actual_cost_usd": decision["predicted_cost_usd"] * 1.12, "actual_delay_days": 1.0},
+        json={"actual_cost_usd": actual_cost, "actual_delay_days": 1.0},
     )
     assert outcome_resp.status_code == 200
     assert outcome_resp.json()["is_resolved"] is True
 
+    accuracy = client.get("/decisions/cost-accuracy").json()
+    assert accuracy["resolved_decisions"] >= 1
+    assert accuracy["avg_cost_error_pct"] is not None
+
     roi = client.get("/decisions/roi").json()
-    assert roi["resolved_decisions"] >= 1
-    assert roi["avg_cost_error_pct"] is not None
+    assert roi["decisions_with_counterfactual"] >= 1
+    assert roi["avg_avoided_loss_usd"] is not None
+    assert roi["avg_roi_pct"] is not None
 
 
 def test_rejects_unknown_option_label(client):
