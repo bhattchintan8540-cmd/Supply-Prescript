@@ -13,9 +13,9 @@ Real-world caveat: a Decision row doesn't carry the full original
 shipment feature set, only enough to compute cost drift. A production
 version would join back to shipments via a foreign key so resolved
 decisions could be folded directly into the training data; for this
-build the retrain step re-fits on data/shipments.csv, which is the
-honest scope for a portfolio demo of "the loop closes and retraining
-gets triggered."
+build the retrain step re-fits on the shipments table / CSV extract,
+which is the honest scope for a portfolio demo of "the loop closes and
+retraining gets triggered."
 """
 from __future__ import annotations
 
@@ -24,14 +24,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import pandas as pd
-
-from week1.config import MODEL_PATH, ROOT_DIR, RETRAIN_DRIFT_THRESHOLD
+from week1.config import MODEL_PATH, RETRAIN_DRIFT_THRESHOLD
 from week1.database import SessionLocal
 from week1.delay_model import DelayModel
+from week1.ingest_real_data import load_shipments
 from week1 import models
-
-DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
 
 
 def average_cost_drift(session) -> float | None:
@@ -55,10 +52,11 @@ def maybe_retrain(force: bool = False) -> dict:
     if not force and drift < RETRAIN_DRIFT_THRESHOLD:
         return {"retrained": False, "reason": f"drift {drift:.1%} under threshold {RETRAIN_DRIFT_THRESHOLD:.0%}", "drift": drift}
 
-    if not DATA_PATH.exists():
-        return {"retrained": False, "reason": f"{DATA_PATH} missing", "drift": drift}
+    try:
+        df = load_shipments(prefer_db=True)
+    except FileNotFoundError as exc:
+        return {"retrained": False, "reason": str(exc), "drift": drift}
 
-    df = pd.read_csv(DATA_PATH)
     model = DelayModel()
     metrics = model.fit(df, verbose=False)
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)

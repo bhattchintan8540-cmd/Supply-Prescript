@@ -2,8 +2,8 @@
 
 Short answers you can give if asked.
 
-### Why mock data?
-Real multi-year supplier lead-time logs are confidential. Mock data with supplier shocks and peak season lets us demonstrate the full loop reproducibly.
+### Why real open data (not mock)?
+Default ingest pulls USAID SCMS delivery history (and optionally UCI Cargo 2000). Those are public shipment logs with scheduled vs actual delivery — enough to train a delay model and seed a real `shipments` table. `make data-mock` remains for fully offline demos.
 
 ### Is MAE ~1.9 days “good enough”?
 For prescribing *options* (not auto-booking), yes as a baseline. The point of the closed loop is to measure and improve with real outcomes.

@@ -1,13 +1,18 @@
 # Convenience targets for beginners — run from the project root.
 # Example:  make setup && make train && make api
 
-.PHONY: setup data explore train demo demo-ui api test retrain clean
+.PHONY: setup data data-mock explore train demo demo-ui api test retrain clean
 
 setup:
 	python -m venv .venv
 	. .venv/bin/activate && pip install -r requirements.txt
 
+# Default: real open data (USAID SCMS) → CSV + shipments DB table
 data:
+	python week1/ingest_real_data.py
+
+# Offline fallback (~4k synthetic rows)
+data-mock:
 	python week1/generate_mock_data.py
 
 explore:
@@ -36,4 +41,5 @@ retrain:
 
 clean:
 	rm -f data/*.csv data/*.joblib data/*.db data/metrics.json
+	rm -rf data/raw
 	rm -f docs/figures/*.png

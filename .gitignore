@@ -6,6 +6,8 @@ data/*.csv
 data/*.joblib
 data/metrics.json
 data/test_*.db
+data/raw/*
+!data/raw/.gitkeep
 !data/.gitkeep
 .pytest_cache/
 .ipynb_checkpoints/

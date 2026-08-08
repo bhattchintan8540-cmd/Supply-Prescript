@@ -2,10 +2,9 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-from week1.config import ROOT_DIR, MODEL_PATH
+from week1.config import MODEL_PATH
 from week1.delay_model import DelayModel
-
-DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
+from week1.ingest_real_data import load_shipments
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -14,9 +13,10 @@ def _ensure_model_artifact():
     artifact sitting at MODEL_PATH - train a throwaway one if it's
     missing rather than requiring a manual step before `pytest`."""
     if not MODEL_PATH.exists():
-        if not DATA_PATH.exists():
-            pytest.skip(f"{DATA_PATH} missing - run week1/generate_mock_data.py first")
-        df = pd.read_csv(DATA_PATH)
+        try:
+            df = load_shipments(prefer_db=True)
+        except FileNotFoundError:
+            pytest.skip("No shipment data — run: python week1/ingest_real_data.py")
         model = DelayModel()
         model.fit(df, verbose=False)
         MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -32,13 +32,13 @@ def client():
 
 
 SAMPLE_SHIPMENT = {
-    "sku": "MICROCHIP-A2",
-    "supplier": "NovaChip Manufacturing",
+    "sku": "ARV-GENERIC-LAMIVUDINE",
+    "supplier": "Aurobindo Pharma Limited",
     "origin_region": "Asia Pacific",
-    "distance_km": 8800,
-    "historical_avg_lead_time_days": 16,
+    "distance_km": 8200,
+    "historical_avg_lead_time_days": 45,
     "order_quantity": 6000,
-    "unit_cost_usd": 14.2,
+    "unit_cost_usd": 0.18,
     "is_peak_season": False,
 }
 

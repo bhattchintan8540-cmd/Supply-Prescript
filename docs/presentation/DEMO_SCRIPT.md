@@ -20,7 +20,7 @@ cd Supply-Prescript
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-python week1/generate_mock_data.py
+python week1/ingest_real_data.py
 python week1/train_model.py
 
 # leave this running in a second terminal for Mode B
@@ -46,7 +46,7 @@ python week1/demo_model.py
 
 1. **Reliable / off-peak** — “This is our calm baseline.”
 2. **Same supplier / peak** — “I only flipped peak season. Risk goes up — the model learned seasonality.”
-3. **Risky supplier** — “Delta Cove has historically worse delays.”
+3. **Risky supplier** — “CIPLA / Aurobindo on the Asia→Africa corridor have historically worse delays.”
 4. **Risky + peak** — “Worst case. Highest days and late probability.”
 
 Optional deepen:

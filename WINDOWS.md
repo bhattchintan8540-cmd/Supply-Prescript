@@ -17,7 +17,7 @@ pip install -r requirements.txt
 ## Train the model
 
 ```powershell
-python week1\generate_mock_data.py
+python week1\ingest_real_data.py
 python week1\train_model.py
 ```
 

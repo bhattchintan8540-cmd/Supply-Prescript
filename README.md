@@ -24,7 +24,7 @@ built week-by-week so a beginner can follow every commit.
 
 ```mermaid
 flowchart LR
-  A[Mock shipment history<br/>week1] --> B[Feature builder]
+  A[Real open shipment history<br/>USAID SCMS / UCI C2K] --> B[Feature builder]
   B --> C[XGBoost delay model<br/>prob + days]
   C --> D[Prescriptive solver<br/>PuLP LP + 3 pure options]
   D --> E[FastAPI + dashboard<br/>week3 / week2]
@@ -36,7 +36,7 @@ flowchart LR
 
 | Week | Folder | What you build |
 |---|---|---|
-| 1 | `week1/` | Mock data, EDA, features, XGBoost delay model, SQLAlchemy schema |
+| 1 | `week1/` | Real open data ingest → DB, EDA, features, XGBoost delay model |
 | 2 | `week2/` | Cost formulas, PuLP optimizer, HTML dashboard |
 | 3 | `week3/` | FastAPI: prescribe → write-back → outcome → ROI |
 | 4 | `week4/` | Drift check + retrain trigger |
@@ -50,8 +50,8 @@ python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# Week 1 — data, charts, model
-python week1/generate_mock_data.py
+# Week 1 — real data, charts, model
+python week1/ingest_real_data.py   # USAID SCMS (~10k) → CSV + shipments table
 python week1/explore_data.py
 python week1/train_model.py
 
@@ -66,6 +66,19 @@ Then open:
 
 Or use the Makefile: `make setup && make data && make explore && make train && make api`
 
+Offline fallback (no network): `make data-mock` instead of `make data`.
+
+### Real data sources
+
+| Source | Command | Approx rows |
+|---|---|---|
+| **USAID SCMS** delivery history (default) | `python week1/ingest_real_data.py` | ~10,000 |
+| **UCI Cargo 2000** freight tracking | `python week1/ingest_real_data.py --source uci-c2k` | ~3,900 |
+| Both concatenated | `python week1/ingest_real_data.py --source both` | ~14,000 |
+
+Training history is stored in the SQLAlchemy `shipments` table (SQLite by
+default, Postgres via `DATABASE_URL`) and mirrored to `data/shipments.csv`.
+
 ---
 
 ## Sample EDA output
@@ -78,7 +91,8 @@ After `python week1/explore_data.py`:
 
 ![Peak-season effect](docs/figures/peak_season_effect.png)
 
-Typical training metrics (seeded mock data): **MAE ≈ 1.9 days**, **AUC ≈ 0.79**.
+Training metrics depend on the source extract; inspect `data/metrics.json`
+after `train_model.py`.
 
 ---
 
@@ -134,6 +148,7 @@ Shared fixture in `conftest.py` points every week’s tests at a throwaway SQLit
 
 ## Skills demonstrated
 
+- Real open-data ingest (USAID SCMS / UCI) into a relational store
 - Predictive analytics (XGBoost classification + regression)
 - Feature engineering shared by train and live inference
 - Prescriptive analytics / linear programming (PuLP)
@@ -149,6 +164,7 @@ Shared fixture in `conftest.py` points every week’s tests at a throwaway SQLit
 ```bash
 docker compose up -d
 export DATABASE_URL=postgresql+psycopg2://sp_user:sp_pass@localhost:5432/supplyprescript
+python week1/ingest_real_data.py   # seeds the shipments table in Postgres
 uvicorn week3.main:app --reload
 ```
 

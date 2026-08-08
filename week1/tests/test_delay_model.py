@@ -3,15 +3,17 @@ import pytest
 
 from week1.config import ROOT_DIR
 from week1.delay_model import DelayModel
-
-DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
+from week1.ingest_real_data import load_shipments
 
 
 @pytest.fixture(scope="module")
 def trained_model():
-    if not DATA_PATH.exists():
-        pytest.skip(f"{DATA_PATH} missing - run week1/generate_mock_data.py first")
-    df = pd.read_csv(DATA_PATH)
+    try:
+        df = load_shipments(prefer_db=True)
+    except FileNotFoundError:
+        pytest.skip("No shipment data — run: python week1/ingest_real_data.py")
+    if len(df) < 50:
+        pytest.skip("Shipment dataset too small to train")
     model = DelayModel()
     model.fit(df, verbose=False)
     return model, df

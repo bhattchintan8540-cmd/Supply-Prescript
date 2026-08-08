@@ -44,22 +44,22 @@ Map weeks to layers. Mention tech stack only at the bottom line.
 
 ## Slide 7 — Data (45 sec)
 
-> “We generated 4,000 realistic mock shipments — real lead-time history is rarely public.  
-> About 46% are late beyond 3 days. That’s enough signal to train on.”
+> “We ingest ~10k real USAID SCMS shipments (optional UCI Cargo 2000) into the shipments table.  
+> Delay labels come from scheduled vs actual delivery — about 10% are late beyond 3 days, with a long tail.”
 
 ## Slides 8–9 — EDA (60–90 sec)
 
 Show charts:
 
-1. Distribution — “most delays are small; long tail matters.”
-2. By supplier — “Delta Cove is clearly worse; the model should learn supplier risk.”
-3. Peak season — “Nov–Dec almost doubles mean delay — so seasonality is mandatory.”
+1. Distribution — “most shipments are on time; the long tail is what hurts.”
+2. By supplier — “CIPLA and Aurobindo sit higher on the Asia→Africa corridor; Trinity Biotech is near-zero.”
+3. Peak season — “real seasonality can differ from intuition — always check the data.”
 
 ## Slide 10 — Model (60 sec)
 
 > “Two XGBoost models share one feature builder so training and live inference can’t drift apart.  
 > Classifier: chance of a meaningful delay. Regressor: how many days.  
-> On held-out data: MAE about 1.9 days, AUC about 0.79 — good enough to drive options, not perfect.”
+> On held-out SCMS data we typically see AUC around 0.80 — good enough to drive options, not perfect.”
 
 ## Slide 11 — Prescribe (45 sec)
 

@@ -14,7 +14,7 @@ Everything you need to present **SupplyPrescript** (Project 3).
 ## Show the model in 30 seconds
 
 ```bash
-python week1/generate_mock_data.py   # once
+python week1/ingest_real_data.py   # once — real USAID SCMS → DB
 python week1/train_model.py          # once
 python week1/demo_model.py           # ← run this on stage
 ```

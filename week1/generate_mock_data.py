@@ -1,19 +1,20 @@
 """
-Week 1 - mock data generator.
+Week 1 - offline mock data generator (fallback only).
 
-Real lead-time history is exactly the kind of thing you can't just
-download, so this fabricates a plausible three-year shipment log:
-a handful of suppliers/regions with different baseline reliability,
-a peak-season effect, and a couple of "shock" windows (a supplier
-having a genuinely bad quarter) so the delay model has something
-non-trivial to learn.
+Prefer the real open-data path:
 
-Run directly to (re)build data/shipments.csv:
+    python week1/ingest_real_data.py
+
+Use this script only when you need a fully offline / deterministic demo
+without network access. It fabricates a plausible three-year shipment
+log with supplier reliability, peak season, and a Delta Cove shock.
+
     python week1/generate_mock_data.py
 """
 from __future__ import annotations
 
 import random
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +23,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = ROOT / "data" / "shipments.csv"
 RNG_SEED = 42
+sys.path.insert(0, str(ROOT))
 
 SUPPLIERS = {
     # name -> (baseline reliability, region)
@@ -99,8 +101,19 @@ def main() -> None:
     df = build()
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_PATH, index=False)
-    print(f"wrote {len(df)} rows -> {OUT_PATH}")
+    print(f"wrote {len(df)} mock rows -> {OUT_PATH}")
     print(df["actual_delay_days"].describe())
+    print("note: prefer `python week1/ingest_real_data.py` for real open data")
+
+    # Keep the DB in sync so train_model's prefer-DB path still works offline.
+    try:
+        from week1.ingest_real_data import seed_database
+
+        df = df.copy()
+        df["data_source"] = "mock"
+        seed_database(df, replace=True)
+    except Exception as exc:  # noqa: BLE001
+        print(f"warning: could not seed database ({exc})")
 
 
 if __name__ == "__main__":

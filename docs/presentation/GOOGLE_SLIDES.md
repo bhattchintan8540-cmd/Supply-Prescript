@@ -39,9 +39,9 @@ Predict → Prescribe → Act/write-back → Log outcome → Retrain on drift
 - Week 4: drift + retrain  
 
 **Slide 7 — Data**  
-- 4,000 mock shipments  
-- 5 suppliers · peak-season effect  
-- ~46% late beyond 3 days  
+- ~10k USAID SCMS shipments (optional ~3.9k UCI Cargo 2000)  
+- Real vendors · corridors · scheduled vs actual delivery  
+- ~10% late beyond 3 days (long tail)  
 
 **Slide 8 — EDA (insert images)**  
 - `docs/figures/delay_distribution.png`  
@@ -49,7 +49,7 @@ Predict → Prescribe → Act/write-back → Log outcome → Retrain on drift
 
 **Slide 9 — Peak insight**  
 - Insert `docs/figures/peak_season_effect.png`  
-- Off-peak ~2.7d vs peak ~5.5d  
+- Always validate seasonality on the real extract  
 
 **Slide 10 — Model**  
 - Shared feature builder  

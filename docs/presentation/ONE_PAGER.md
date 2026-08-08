@@ -19,23 +19,23 @@ Teams often discover a shipment is late **after** it is already late. Panic expe
 | D Optimizer split | PuLP mix under budget + max delay |
 
 ## Build (4 weeks)
-1. **Predict** — mock history, EDA, XGBoost classifier + regressor  
+1. **Predict** — real USAID SCMS / UCI ingest → DB, EDA, XGBoost  
 2. **Prescribe** — cost formulas, PuLP LP, dashboard  
 3. **Act** — FastAPI write-back, outcomes, Decision ROI  
 4. **Learn** — drift threshold + retrain trigger  
 
-## Snapshot results (seeded mock data)
-- **~4,000** shipments · **~46%** late &gt; 3 days  
-- **MAE ≈ 1.87 days** · **AUC ≈ 0.79**  
-- **15** pytest checks green  
+## Snapshot results (real open data)
+- **~10,000** USAID SCMS shipments (or ~3.9k UCI Cargo 2000) seeded into SQLite/Postgres  
+- Delay labels from scheduled vs actual delivery dates  
+- Inspect `data/metrics.json` after training for MAE / AUC  
 
 ## Run the demo
 ```bash
 pip install -r requirements.txt
-python week1/generate_mock_data.py && python week1/train_model.py
+python week1/ingest_real_data.py && python week1/train_model.py
 uvicorn week3.main:app --reload
 ```
 Dashboard: `http://127.0.0.1:8000/ui/`
 
 ## Skills shown
-EDA · feature engineering · predictive ML · prescriptive optimization · API / write-back · ROI & drift monitoring · reproducible GitHub project structure
+Real open-data ingest · relational store · EDA · feature engineering · predictive ML · prescriptive optimization · API / write-back · ROI & drift monitoring · reproducible GitHub project structure

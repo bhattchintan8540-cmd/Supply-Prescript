@@ -2,7 +2,8 @@
 Live model demo for presentations.
 
 Compares a few realistic shipments side-by-side so you can show the
-audience that the delay model reacts to supplier risk and peak season.
+audience that the delay model reacts to supplier / corridor risk.
+Scenarios use vendors that appear in the USAID SCMS open dataset.
 
     python week1/demo_model.py
 
@@ -18,61 +19,63 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from week1.config import MODEL_PATH
 from week1.delay_model import DelayModel
 
-# Curated stories that make the model "come alive" on stage.
+# Curated stories grounded in real SCMS vendors / corridors.
+# Trinity Biotech has near-zero historical delay; CIPLA / Aurobindo
+# sit on the higher-delay Asia→Africa ARV corridor in the open data.
 SCENARIOS = [
     {
-        "name": "Reliable supplier · off-peak",
-        "why": "Baseline — Meridian is the most reliable vendor.",
+        "name": "Trinity Biotech · Europe · off-peak",
+        "why": "Low-delay HIV rapid-test vendor on a short corridor.",
         "shipment": {
-            "sku": "SENSOR-IR",
-            "supplier": "Meridian Fasteners",
-            "origin_region": "North America",
-            "distance_km": 2400,
-            "historical_avg_lead_time_days": 9,
-            "order_quantity": 4000,
-            "unit_cost_usd": 8.5,
+            "sku": "HRDT-UNI-GOLD-HIV-1-2",
+            "supplier": "Trinity Biotech, Plc",
+            "origin_region": "Europe",
+            "distance_km": 6200,
+            "historical_avg_lead_time_days": 78,
+            "order_quantity": 400,
+            "unit_cost_usd": 1.6,
             "is_peak_season": False,
         },
     },
     {
         "name": "Same order · peak season",
-        "why": "Only the peak flag flips — delay risk should jump.",
+        "why": "Only the peak flag flips — watch probability move.",
         "shipment": {
-            "sku": "SENSOR-IR",
-            "supplier": "Meridian Fasteners",
-            "origin_region": "North America",
-            "distance_km": 2400,
-            "historical_avg_lead_time_days": 9,
-            "order_quantity": 4000,
-            "unit_cost_usd": 8.5,
+            "sku": "HRDT-UNI-GOLD-HIV-1-2",
+            "supplier": "Trinity Biotech, Plc",
+            "origin_region": "Europe",
+            "distance_km": 6200,
+            "historical_avg_lead_time_days": 78,
+            "order_quantity": 400,
+            "unit_cost_usd": 1.6,
             "is_peak_season": True,
         },
     },
     {
-        "name": "Risky supplier · long haul",
-        "why": "Delta Cove + Asia Pacific — the model should flag trouble.",
+        "name": "Aurobindo · Asia→Africa · long haul",
+        "why": "High-volume Indian ARV supplier — higher historical delay.",
         "shipment": {
-            "sku": "MICROCHIP-A2",
-            "supplier": "Delta Cove Electronics",
+            "sku": "ARV-GENERIC-EFAVIRENZ",
+            "supplier": "Aurobindo Pharma Limited",
             "origin_region": "Asia Pacific",
-            "distance_km": 9500,
-            "historical_avg_lead_time_days": 18,
-            "order_quantity": 8000,
-            "unit_cost_usd": 22.0,
+            "distance_km": 8300,
+            "historical_avg_lead_time_days": 120,
+            "order_quantity": 11000,
+            "unit_cost_usd": 0.12,
             "is_peak_season": False,
         },
     },
     {
-        "name": "Risky supplier · peak + long haul",
-        "why": "Worst case — expect the highest delay / probability.",
+        "name": "CIPLA · Asia→Africa · peak",
+        "why": "Highest mean delay among large SCMS vendors in the open data.",
         "shipment": {
-            "sku": "MICROCHIP-A2",
-            "supplier": "Delta Cove Electronics",
+            "sku": "ARV-GENERIC-TENOFOVIR-DISOPROXIL-FUMARAT",
+            "supplier": "CIPLA LIMITED",
             "origin_region": "Asia Pacific",
-            "distance_km": 9500,
-            "historical_avg_lead_time_days": 18,
-            "order_quantity": 8000,
-            "unit_cost_usd": 22.0,
+            "distance_km": 8450,
+            "historical_avg_lead_time_days": 128,
+            "order_quantity": 20000,
+            "unit_cost_usd": 0.12,
             "is_peak_season": True,
         },
     },
@@ -89,7 +92,7 @@ def main() -> None:
         raise SystemExit(
             f"Model not found at {MODEL_PATH}\n"
             "Run these first:\n"
-            "  python week1/generate_mock_data.py\n"
+            "  python week1/ingest_real_data.py\n"
             "  python week1/train_model.py"
         )
 
@@ -99,7 +102,7 @@ def main() -> None:
     print("=" * 72)
     print(f"Loaded: {MODEL_PATH.name}")
     print()
-    print(f"{'Scenario':<36} {'Days':>6}  {'P(late>3d)':>10}  Risk bar")
+    print(f"{'Scenario':<42} {'Days':>6}  {'P(late>3d)':>10}  Risk bar")
     print("-" * 72)
 
     results = []
@@ -108,7 +111,7 @@ def main() -> None:
         days = round(days, 1)
         prob = round(prob, 3)
         results.append((case, days, prob))
-        print(f"{case['name']:<36} {days:>6.1f}  {prob:>9.1%}  {_bar(prob)}")
+        print(f"{case['name']:<42} {days:>6.1f}  {prob:>9.1%}  {_bar(prob)}")
 
     print("-" * 72)
     print()

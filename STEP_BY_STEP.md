@@ -30,7 +30,9 @@ Nothing runs yet — this just sets up the project shell.
 
 What you get:
 
-- Fake 3-year shipment history (`generate_mock_data.py`)
+- Real open shipment history (`ingest_real_data.py`) from USAID SCMS
+  (~10k rows) or UCI Cargo 2000 (~3.9k rows), loaded into the
+  `shipments` SQLAlchemy table + `data/shipments.csv`
 - EDA charts (`explore_data.py` → `docs/figures/`) + notebook
 - Feature builder shared by train + live predict (`features.py`)
 - XGBoost classifier + regressor (`delay_model.py`)
@@ -39,17 +41,21 @@ What you get:
 Run it:
 
 ```bash
-python week1/generate_mock_data.py
+python week1/ingest_real_data.py
 python week1/explore_data.py
 python week1/train_model.py
 ```
 
 You should see:
 
-1. ~4,000 rows written to `data/shipments.csv`
+1. ~10,000 real rows written to `data/shipments.csv` and seeded into
+   `data/supplyprescript.db` (shipments table)
 2. Three PNGs under `docs/figures/`
-3. Training metrics printed (MAE ~1.9 days, AUC ~0.79) and
-   `data/delay_model.joblib` + `data/metrics.json` saved
+3. Training metrics printed and `data/delay_model.joblib` +
+   `data/metrics.json` saved
+
+Offline without network: `python week1/generate_mock_data.py` (or
+`make data-mock`).
 
 Optional: open `notebooks/01_exploratory_analysis.ipynb` in VS Code / Jupyter.
 

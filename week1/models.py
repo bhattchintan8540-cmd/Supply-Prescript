@@ -9,7 +9,9 @@ from .database import Base
 
 class Shipment(Base):
     """One historical shipment record - this is what the delay model
-    trains on. Mock data lives in week1/generate_mock_data.py."""
+    trains on. Prefer real open data via week1/ingest_real_data.py
+    (USAID SCMS / UCI Cargo 2000); mock rows remain available from
+    week1/generate_mock_data.py for offline demos."""
 
     __tablename__ = "shipments"
 
@@ -24,6 +26,8 @@ class Shipment(Base):
     is_peak_season = Column(Boolean, default=False)
     # label the model is trained against
     actual_delay_days = Column(Float, nullable=False)
+    # provenance: "usaid-scms", "uci-c2k", "mock", …
+    data_source = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: dt.datetime.now(dt.UTC))
 
 

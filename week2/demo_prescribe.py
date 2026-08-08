@@ -18,13 +18,13 @@ from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
 
 DEMO_SHIPMENT = {
-    "sku": "MICROCHIP-A2",
-    "supplier": "Delta Cove Electronics",
+    "sku": "ARV-GENERIC-TENOFOVIR-DISOPROXIL-FUMARAT",
+    "supplier": "CIPLA LIMITED",
     "origin_region": "Asia Pacific",
-    "distance_km": 9500,
-    "historical_avg_lead_time_days": 18,
-    "order_quantity": 6000,
-    "unit_cost_usd": 14.2,
+    "distance_km": 8450,
+    "historical_avg_lead_time_days": 128,
+    "order_quantity": 20000,
+    "unit_cost_usd": 0.12,
     "is_peak_season": True,
 }
 

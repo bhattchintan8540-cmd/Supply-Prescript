@@ -1,7 +1,9 @@
 """
-Week 1 - trains the delay model against data/shipments.csv and drops the
-artifact at the path in week1/config.MODEL_PATH.
+Week 1 - trains the delay model against the real shipments table
+(preferred) or data/shipments.csv, and drops the artifact at the path
+in week1/config.MODEL_PATH.
 
+    python week1/ingest_real_data.py   # once — pull USAID SCMS / UCI C2K
     python week1/train_model.py
 
 Also called from week4/retrain.py once decisions start piling up and
@@ -16,20 +18,20 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import pandas as pd
-
 from week1.config import MODEL_PATH, ROOT_DIR
 from week1.delay_model import DelayModel
+from week1.ingest_real_data import load_shipments
 
-DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
 METRICS_PATH = ROOT_DIR / "data" / "metrics.json"
 
 
 def main() -> None:
-    if not DATA_PATH.exists():
-        raise SystemExit(f"{DATA_PATH} not found - run generate_mock_data.py first")
+    try:
+        df = load_shipments(prefer_db=True)
+    except FileNotFoundError as exc:
+        raise SystemExit(str(exc)) from exc
 
-    df = pd.read_csv(DATA_PATH)
+    print(f"training on {len(df):,} shipment rows")
     model = DelayModel()
     metrics = model.fit(df)
 
