@@ -74,8 +74,11 @@ table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 
 th, td { text-align: left; border-bottom: 1px solid var(--border); padding: 0.45rem 0.5rem; }
 th { color: #5b6472; font-weight: 600; }
 
-#roi-summary { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 0.75rem 0; font-size: 0.9rem; }
-#roi-summary strong { display: block; font-size: 1.1rem; }
+#roi-summary,
+#cost-accuracy-summary { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 0.75rem 0; font-size: 0.9rem; }
+#roi-summary strong,
+#cost-accuracy-summary strong { display: block; font-size: 1.1rem; }
+.muted { color: #666; font-size: 0.9rem; max-width: 52rem; }
 
 .hint { color: #5b6472; font-size: 0.95rem; margin: 0 0 0.75rem; }
 .scenario-row {
