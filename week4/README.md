@@ -1,26 +1,33 @@
-# Week 4 — Continuous Learning
+# Week 4 — Drift Detection + Outcome-Aware Retraining
 
-**Implementation Phase 4**: the piece that actually makes this
-"closed-loop" instead of just "logs outcomes and forgets them."
+**Implementation Phase 4**: close the learning loop when enough
+resolved decisions exist.
 
-- `retrain.py` — pulls resolved decisions, computes the average drift
-  between predicted and actual cost, and retrains the Week 1 model if
-  that drift crosses `RETRAIN_DRIFT_THRESHOLD` (see `week1/config.py`).
-  Not a scheduler itself — point cron, a GitHub Action, or a Retool
-  scheduled query at it.
+- `retrain.py` — pulls resolved decisions, computes average cost drift,
+  and when drift crosses `RETRAIN_DRIFT_THRESHOLD` rebuilds the training
+  frame from `data/shipments.csv` **plus** eligible outcomes that carry
+  a shipment feature snapshot and an actual delay label.
 
 ```bash
 python week4/retrain.py            # retrains only if drift is over threshold
 python week4/retrain.py --force    # retrains unconditionally
 ```
 
-## Known simplification
+## What "closed loop" means here
 
-A `Decision` row doesn't carry the full original shipment feature set,
-only enough to compute cost drift — so the retrain step re-fits on
-`data/shipments.csv` rather than folding resolved decisions directly
-into the training data. A production version would join `Decision`
-back to `Shipment` via a foreign key and actually grow the training set
-over time. Documented here rather than hidden, since it's the one part
-of the closed loop that's more "demonstrates the trigger mechanism"
-than "actually learns from every decision."
+| Ingredient | Role |
+|---|---|
+| Cost drift from resolved decisions | Trigger |
+| `shipment_features_json` on Decision | Features for new training rows |
+| `actual_delay_days` on Decision | Label for new training rows |
+| Temporal `DelayModel.fit` | Learns from history → predicts later periods |
+
+Decisions logged **without** a feature snapshot still contribute to the
+drift trigger, but cannot become training rows. The dashboard and API
+now store features on execute so new decisions are eligible.
+
+## Honest scope
+
+This is a portfolio-scale closed loop: outcomes with snapshots are
+folded into retraining. It is not an online learning system, and it
+does not invent features for older decisions that lack snapshots.
