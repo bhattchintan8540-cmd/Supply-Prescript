@@ -144,8 +144,12 @@ class ModelInfo(BaseModel):
     model_loaded: bool
     model_path: str
     mae_days: float | None = None
+    rmse_days: float | None = None
+    r2_days: float | None = None
     auc: float | None = None
+    pr_auc: float | None = None
     n_train: int | None = None
+    n_val: int | None = None
     n_test: int | None = None
     validation_strategy: str | None = None
     baseline_mae_days: float | None = None
@@ -153,6 +157,10 @@ class ModelInfo(BaseModel):
     precision: float | None = None
     recall: float | None = None
     f1: float | None = None
+    specificity: float | None = None
     brier_score: float | None = None
+    ece: float | None = None
+    decision_threshold: float | None = None
+    probability_calibrated: bool | None = None
     data_is_synthetic: bool = True
     top_features: list[FeatureImportance] = []
