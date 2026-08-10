@@ -69,14 +69,19 @@
     </section>
 
     <section id="roi-section">
-      <h2>4. Decision ROI (closed loop)</h2>
+      <h2>4. Closed-loop measurement</h2>
+      <p class="muted">Intervention ROI compares actual cost to the Delay Launch (no-action) baseline.
+         Cost accuracy is listed separately — forecast error is not ROI.</p>
       <button id="refresh-roi">Refresh</button>
+      <h3>Intervention ROI (vs no action)</h3>
       <div id="roi-summary"></div>
+      <h3>Cost forecast accuracy</h3>
+      <div id="cost-accuracy-summary"></div>
       <table id="decisions-table">
         <thead>
           <tr>
             <th>ID</th><th>SKU</th><th>Chosen option</th><th>Predicted $</th>
-            <th>Actual $</th><th>Status</th><th>Log outcome</th>
+            <th>No-action $</th><th>Actual $</th><th>Status</th><th>Log outcome</th>
           </tr>
         </thead>
         <tbody></tbody>

@@ -10,6 +10,7 @@ const predictionSummary = document.getElementById("prediction-summary");
 const optionsSection = document.getElementById("options-section");
 const optionsCards = document.getElementById("options-cards");
 const roiSummaryEl = document.getElementById("roi-summary");
+const costAccuracyEl = document.getElementById("cost-accuracy-summary");
 const decisionsTbody = document.querySelector("#decisions-table tbody");
 const scenarioButtons = document.getElementById("scenario-buttons");
 
@@ -170,6 +171,17 @@ function renderOptions(body) {
 
 async function executeDecision(label) {
   if (!lastPrescription) return;
+  const formData = new FormData(form);
+  const shipmentFeatures = {
+    sku: formData.get("sku"),
+    supplier: formData.get("supplier"),
+    origin_region: formData.get("origin_region"),
+    distance_km: Number(formData.get("distance_km")),
+    historical_avg_lead_time_days: Number(formData.get("historical_avg_lead_time_days")),
+    order_quantity: Number(formData.get("order_quantity")),
+    unit_cost_usd: Number(formData.get("unit_cost_usd")),
+    is_peak_season: form.elements["is_peak_season"].checked,
+  };
   const payload = {
     shipment_sku: lastPrescription.shipment_sku,
     predicted_delay_days: lastPrescription.prediction.predicted_delay_days,
@@ -177,6 +189,8 @@ async function executeDecision(label) {
     options: lastPrescription.options,
     chosen_option_label: label,
     budget_cap_usd: lastPrescription.budget_cap_usd,
+    shipment_features: shipmentFeatures,
+    no_action_cost_usd: lastPrescription.no_action_cost_usd,
   };
   const resp = await fetch(`${API_BASE}/decisions`, {
     method: "POST",
@@ -192,20 +206,32 @@ async function executeDecision(label) {
 }
 
 async function loadDecisions() {
-  const [roiResp, decisionsResp] = await Promise.all([
+  const [roiResp, accuracyResp, decisionsResp] = await Promise.all([
     fetch(`${API_BASE}/decisions/roi`),
+    fetch(`${API_BASE}/decisions/cost-accuracy`),
     fetch(`${API_BASE}/decisions`),
   ]);
   if (roiResp.ok) renderRoi(await roiResp.json());
+  if (accuracyResp.ok) renderCostAccuracy(await accuracyResp.json());
   if (decisionsResp.ok) renderDecisions(await decisionsResp.json());
 }
 
 function renderRoi(roi) {
   roiSummaryEl.innerHTML = `
-    <div><strong>${roi.total_decisions}</strong>decisions logged</div>
-    <div><strong>${roi.resolved_decisions}</strong>outcomes recorded</div>
-    <div><strong>${roi.avg_cost_error_pct ?? "—"}${roi.avg_cost_error_pct != null ? "%" : ""}</strong>avg cost prediction error</div>
-    <div><strong>${roi.decisions_within_budget_pct ?? "—"}${roi.decisions_within_budget_pct != null ? "%" : ""}</strong>ended up within budget</div>
+    <div><strong>${roi.decisions_with_counterfactual ?? 0}</strong>with no-action baseline</div>
+    <div><strong>${roi.avg_avoided_loss_usd != null ? "$" + Number(roi.avg_avoided_loss_usd).toLocaleString() : "—"}</strong>avg avoided loss</div>
+    <div><strong>${roi.avg_roi_pct ?? "—"}${roi.avg_roi_pct != null ? "%" : ""}</strong>avg ROI vs no action</div>
+    <div><strong>${roi.interventions_beating_no_action_pct ?? "—"}${roi.interventions_beating_no_action_pct != null ? "%" : ""}</strong>beat doing nothing</div>
+  `;
+}
+
+function renderCostAccuracy(summary) {
+  if (!costAccuracyEl) return;
+  costAccuracyEl.innerHTML = `
+    <div><strong>${summary.total_decisions}</strong>decisions logged</div>
+    <div><strong>${summary.resolved_decisions}</strong>outcomes recorded</div>
+    <div><strong>${summary.avg_cost_error_pct ?? "—"}${summary.avg_cost_error_pct != null ? "%" : ""}</strong>avg cost prediction error</div>
+    <div><strong>${summary.decisions_within_budget_pct ?? "—"}${summary.decisions_within_budget_pct != null ? "%" : ""}</strong>ended up within budget</div>
   `;
 }
 
@@ -218,6 +244,7 @@ function renderDecisions(decisions) {
       <td>${d.shipment_sku}</td>
       <td>${d.chosen_option_label}</td>
       <td>$${d.predicted_cost_usd.toLocaleString()}</td>
+      <td>${d.no_action_cost_usd != null ? "$" + Number(d.no_action_cost_usd).toLocaleString() : "—"}</td>
       <td>${d.actual_cost_usd != null ? "$" + d.actual_cost_usd.toLocaleString() : "—"}</td>
       <td>${d.is_resolved ? "resolved" : "pending"}</td>
       <td></td>
