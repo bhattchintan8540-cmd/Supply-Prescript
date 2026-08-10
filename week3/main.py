@@ -3,8 +3,14 @@ Week 3 - wires the trained model + solver up to a small FastAPI service
 with the write-back path the project brief calls for: a manager hits
 /prescribe, picks an option, POSTs it to /decisions (that's the INSERT
 into the operational table), and later PATCHes the outcome once the
-real cost/delay is known so /decisions/roi can report how the AI's
-picks actually performed.
+real cost/delay is known.
+
+Measurement endpoints (intentionally separated):
+  GET /decisions/cost-accuracy  — forecast error + budget adherence
+  GET /decisions/roi            — true ROI vs Delay Launch (no-action)
+
+The old "ROI" label for cost-error metrics was misleading; both routes
+exist so demos and tests can show the distinction clearly.
 """
 from __future__ import annotations
 
@@ -28,7 +34,15 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from week1 import models
-from week1.config import DEFAULT_BUDGET_USD, DEFAULT_MAX_DELAY_DAYS, METRICS_PATH, MODEL_PATH, ROOT_DIR
+from week1.config import (
+    DEFAULT_BUDGET_USD,
+    DEFAULT_MAX_DELAY_DAYS,
+    DEFAULT_MIN_ON_TIME_FRACTION,
+    METRICS_PATH,
+    MODEL_PATH,
+    PARTIAL_FULFILLMENT_USEFUL,
+    ROOT_DIR,
+)
 from week1.database import get_session, init_db
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
@@ -36,6 +50,7 @@ from week2.solver import pure_options, solve_optimal_allocation
 from . import schemas
 
 FRONTEND_DIR = ROOT_DIR / "week2" / "frontend"
+DELAY_LAUNCH_LABEL = "Delay Launch"
 
 
 @asynccontextmanager
@@ -44,7 +59,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SupplyPrescript API", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="SupplyPrescript API", version="0.5.0", lifespan=lifespan)
 # Allow local dashboard opened as a file (null origin) or via a simple
 # static server on common localhost ports.
 app.add_middleware(
@@ -86,7 +101,11 @@ def health() -> dict:
 
 @app.get("/model/info", response_model=schemas.ModelInfo)
 def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
-    """Return held-out training metrics so presenters can quote MAE/AUC live."""
+    """Return held-out training metrics so presenters can quote MAE/AUC live.
+
+    Metrics come from synthetic data with programmed relationships —
+    useful for demos, not claims about real-world delay prediction.
+    """
     payload: dict = {
         "model_loaded": True,
         "model_path": str(MODEL_PATH),
@@ -94,16 +113,34 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
         "auc": None,
         "n_train": None,
         "n_test": None,
+        "validation_strategy": None,
+        "baseline_mae_days": None,
+        "baseline_auc": None,
+        "precision": None,
+        "recall": None,
+        "f1": None,
+        "brier_score": None,
+        "data_is_synthetic": True,
         "top_features": [],
     }
     if METRICS_PATH.exists():
-        import json
-
         saved = json.loads(METRICS_PATH.read_text())
-        payload["mae_days"] = saved.get("mae_days")
-        payload["auc"] = saved.get("auc")
-        payload["n_train"] = saved.get("n_train")
-        payload["n_test"] = saved.get("n_test")
+        for key in (
+            "mae_days",
+            "auc",
+            "n_train",
+            "n_test",
+            "validation_strategy",
+            "baseline_mae_days",
+            "baseline_auc",
+            "precision",
+            "recall",
+            "f1",
+            "brier_score",
+            "data_is_synthetic",
+        ):
+            if key in saved:
+                payload[key] = saved[key]
         payload["top_features"] = saved.get("top_features") or []
     else:
         # Fallback: compute top features from the loaded model artifact.
@@ -124,13 +161,25 @@ def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get
     prob = round(prob, 3)
     budget_cap = request.budget_cap_usd or DEFAULT_BUDGET_USD
     max_delay = request.max_acceptable_delay_days or DEFAULT_MAX_DELAY_DAYS
+    partial = (
+        PARTIAL_FULFILLMENT_USEFUL
+        if request.partial_fulfillment_useful is None
+        else request.partial_fulfillment_useful
+    )
+    min_on_time = (
+        DEFAULT_MIN_ON_TIME_FRACTION
+        if request.min_on_time_fraction is None
+        else request.min_on_time_fraction
+    )
 
     options = pure_options(
         unit_cost_usd=request.shipment.unit_cost_usd,
         order_quantity=request.shipment.order_quantity,
         predicted_delay_days=days,
         budget_cap_usd=budget_cap,
+        predicted_delay_probability=prob,
     )
+    no_action = next(o for o in options if o["label"] == DELAY_LAUNCH_LABEL)
 
     # bolt the solver's blended recommendation on as a fourth card - it's
     # usually the cheapest way to satisfy the delay constraint, which a
@@ -141,17 +190,29 @@ def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get
         predicted_delay_days=days,
         budget_cap_usd=budget_cap,
         max_acceptable_delay_days=max_delay,
+        predicted_delay_probability=prob,
+        partial_fulfillment_useful=partial,
+        min_on_time_fraction=min_on_time,
     )
     allocation_desc = ", ".join(
-        f"{qty:.0f} units via {label.replace('_', ' ')}" for label, qty in blend["allocation_units"].items() if qty > 0
+        f"{qty:.0f} units via {label.replace('_', ' ')}"
+        for label, qty in blend["allocation_units"].items()
+        if qty > 0
     )
     options.append(
         {
             "label": "Optimizer Recommended Split",
-            "description": f"PuLP-optimized allocation: {allocation_desc}."
-            + (" (over budget cap - shown anyway since the budget-constrained problem was infeasible)" if blend["budget_relaxed"] else ""),
+            "description": (
+                f"MILP allocation ({blend['delay_constraint_mode']}): {allocation_desc}. "
+                f"Fixed fees ${blend['fixed_fees_usd']:,.0f} included in budget check."
+                + (
+                    " (over budget cap - shown anyway since the budget-constrained problem was infeasible)"
+                    if blend["budget_relaxed"]
+                    else ""
+                )
+            ),
             "cost_usd": blend["total_cost_usd"],
-            "resulting_delay_days": blend["weighted_avg_delay_days"],
+            "resulting_delay_days": blend["resulting_delay_days"],
             "within_budget": blend["within_budget"],
         }
     )
@@ -161,6 +222,8 @@ def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get
         options=[schemas.Option(**opt) for opt in options],
         shipment_sku=request.shipment.sku,
         budget_cap_usd=budget_cap,
+        delay_constraint_mode=blend["delay_constraint_mode"],
+        no_action_cost_usd=no_action["cost_usd"],
     )
 
 
@@ -171,13 +234,25 @@ def create_decision(payload: schemas.DecisionCreate, session: Session = Depends(
     if chosen is None:
         raise HTTPException(status_code=422, detail=f"'{payload.chosen_option_label}' isn't one of the options that were offered")
 
+    # Prefer explicit no-action cost; otherwise recover Delay Launch from options.
+    no_action_cost = payload.no_action_cost_usd
+    if no_action_cost is None:
+        delay_opt = next((o for o in payload.options if o.label == DELAY_LAUNCH_LABEL), None)
+        no_action_cost = delay_opt.cost_usd if delay_opt is not None else None
+
+    features_json = None
+    if payload.shipment_features is not None:
+        features_json = json.dumps(payload.shipment_features.model_dump())
+
     decision = models.Decision(
         shipment_sku=payload.shipment_sku,
         predicted_delay_days=payload.predicted_delay_days,
         predicted_delay_probability=payload.predicted_delay_probability,
         options_json=json.dumps([o.model_dump() for o in payload.options]),
+        shipment_features_json=features_json,
         chosen_option_label=payload.chosen_option_label,
         predicted_cost_usd=chosen.cost_usd,
+        no_action_cost_usd=no_action_cost,
         budget_cap_usd=payload.budget_cap_usd,
     )
     session.add(decision)
@@ -209,13 +284,12 @@ def record_outcome(decision_id: int, outcome: schemas.OutcomeUpdate, session: Se
     return decision
 
 
-@app.get("/decisions/roi", response_model=schemas.RoiSummary)
-def decisions_roi(session: Session = Depends(get_session)):
+def _cost_accuracy_summary(session: Session) -> schemas.CostAccuracySummary:
     all_decisions = session.query(models.Decision).all()
     resolved = [d for d in all_decisions if d.is_resolved]
 
     if not resolved:
-        return schemas.RoiSummary(
+        return schemas.CostAccuracySummary(
             total_decisions=len(all_decisions),
             resolved_decisions=0,
             avg_predicted_cost_usd=None,
@@ -226,16 +300,66 @@ def decisions_roi(session: Session = Depends(get_session)):
 
     avg_predicted = sum(d.predicted_cost_usd for d in resolved) / len(resolved)
     avg_actual = sum(d.actual_cost_usd for d in resolved) / len(resolved)
-    errors_pct = [abs(d.actual_cost_usd - d.predicted_cost_usd) / d.predicted_cost_usd for d in resolved if d.predicted_cost_usd]
+    errors_pct = [
+        abs(d.actual_cost_usd - d.predicted_cost_usd) / d.predicted_cost_usd
+        for d in resolved
+        if d.predicted_cost_usd
+    ]
     within_budget = [d for d in resolved if d.actual_cost_usd <= d.budget_cap_usd]
 
-    return schemas.RoiSummary(
+    return schemas.CostAccuracySummary(
         total_decisions=len(all_decisions),
         resolved_decisions=len(resolved),
         avg_predicted_cost_usd=round(avg_predicted, 2),
         avg_actual_cost_usd=round(avg_actual, 2),
         avg_cost_error_pct=round(sum(errors_pct) / len(errors_pct) * 100, 1) if errors_pct else None,
         decisions_within_budget_pct=round(len(within_budget) / len(resolved) * 100, 1),
+    )
+
+
+@app.get("/decisions/cost-accuracy", response_model=schemas.CostAccuracySummary)
+def decisions_cost_accuracy(session: Session = Depends(get_session)):
+    """Cost forecast accuracy + budget adherence (not ROI)."""
+    return _cost_accuracy_summary(session)
+
+
+@app.get("/decisions/roi", response_model=schemas.InterventionRoiSummary)
+def decisions_roi(session: Session = Depends(get_session)):
+    """True intervention ROI versus the stored no-action counterfactual.
+
+    Avoided loss = no_action_cost - actual_cost.
+    Falls back to an empty counterfactual summary when no decisions have
+    a Delay Launch baseline stored.
+    """
+    all_decisions = session.query(models.Decision).all()
+    resolved = [d for d in all_decisions if d.is_resolved]
+    with_cf = [d for d in resolved if d.no_action_cost_usd is not None and d.no_action_cost_usd > 0]
+
+    if not with_cf:
+        return schemas.InterventionRoiSummary(
+            total_decisions=len(all_decisions),
+            resolved_decisions=len(resolved),
+            decisions_with_counterfactual=0,
+            avg_no_action_cost_usd=None,
+            avg_actual_cost_usd=None,
+            avg_avoided_loss_usd=None,
+            avg_roi_pct=None,
+            interventions_beating_no_action_pct=None,
+        )
+
+    avoided = [d.no_action_cost_usd - d.actual_cost_usd for d in with_cf]
+    roi_pcts = [(d.no_action_cost_usd - d.actual_cost_usd) / d.no_action_cost_usd * 100 for d in with_cf]
+    beats = [a for a in avoided if a > 0]
+
+    return schemas.InterventionRoiSummary(
+        total_decisions=len(all_decisions),
+        resolved_decisions=len(resolved),
+        decisions_with_counterfactual=len(with_cf),
+        avg_no_action_cost_usd=round(sum(d.no_action_cost_usd for d in with_cf) / len(with_cf), 2),
+        avg_actual_cost_usd=round(sum(d.actual_cost_usd for d in with_cf) / len(with_cf), 2),
+        avg_avoided_loss_usd=round(sum(avoided) / len(avoided), 2),
+        avg_roi_pct=round(sum(roi_pcts) / len(roi_pcts), 1),
+        interventions_beating_no_action_pct=round(len(beats) / len(with_cf) * 100, 1),
     )
 
 
