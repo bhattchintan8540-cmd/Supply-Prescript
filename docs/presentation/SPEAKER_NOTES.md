@@ -59,22 +59,23 @@ Show charts:
 
 > “Two XGBoost models share one feature builder so training and live inference can’t drift apart.  
 > Classifier: chance of a meaningful delay. Regressor: how many days.  
-> On held-out data: MAE about 1.9 days, AUC about 0.79 — good enough to drive options, not perfect.”
+> We validate temporally on synthetic data and compare to supplier baselines — the metrics show we recover the environment we built, not a claim about real-world AUC.”
 
 ## Slide 11 — Prescribe (45 sec)
 
-> “Week 2 turns the forecast into money and days.  
-> Three pure options plus a small linear program that can split the order across channels under budget and max-delay constraints.”
+> “Week 2 turns the forecast into expected money and operational days.  
+> Expected holding uses probability × magnitude. Fixed fees sit inside a small MILP.  
+> Default delay constraint is makespan — production waits for the last unit — unless partial fulfillment is useful.”
 
 ## Slide 12 — API / closed loop (45 sec)
 
-> “Week 3 is the operational layer: prescribe, save the choice, later patch the real outcome, then read Decision ROI.”
+> “Week 3 is the operational layer: prescribe, save the choice with a no-action baseline, later patch the real outcome.  
+> Intervention ROI asks whether we beat doing nothing. Cost accuracy is a separate metric.”
 
 ## Slide 13 — Retrain (30 sec)
 
-> “If average cost error drifts past 15%, we retrain.  
-> That’s continuous learning in portfolio form.”
-
+> “If average cost error drifts past 15%, we retrain on shipments plus eligible outcomes that carry feature snapshots.  
+> That’s a portfolio-scale closed learning loop — not online learning theater.”
 ## Slide 14 — Demo (live)
 
 Follow [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md). If network/API fails, skip to Results and show figures + `/docs` screenshots.
