@@ -28,6 +28,25 @@ METRICS_PATH = Path(os.getenv("METRICS_PATH", ROOT_DIR / "data" / "metrics.json"
 DEFAULT_BUDGET_USD = float(os.getenv("SP_DEFAULT_BUDGET", 20_000))
 DEFAULT_MAX_DELAY_DAYS = int(os.getenv("SP_DEFAULT_MAX_DELAY_DAYS", 14))
 
+# Operational delay semantics for the optimizer.
+# When partial fulfillment is NOT useful (default), production cannot start
+# until the last unit arrives — so the constraint is on makespan
+# (max delay across used channels), not quantity-weighted average delay.
+# Set SP_PARTIAL_FULFILLMENT_USEFUL=1 only when arriving units create
+# usable business value before the full order is complete.
+PARTIAL_FULFILLMENT_USEFUL = os.getenv("SP_PARTIAL_FULFILLMENT_USEFUL", "0") in {
+    "1",
+    "true",
+    "True",
+    "yes",
+    "YES",
+}
+
+# Minimum fraction of the order that must travel on channels whose
+# resulting delay is within the SLA (max_acceptable_delay_days). Useful
+# even when partial fulfillment is allowed — e.g. "at least 70% on time."
+DEFAULT_MIN_ON_TIME_FRACTION = float(os.getenv("SP_MIN_ON_TIME_FRACTION", 0.0))
+
 # How far predicted cost can drift from actual cost before we bother
 # retraining (see week4/retrain.py). 15% felt like a reasonable "don't
 # retrain over noise" threshold - tune as more decisions accumulate.
