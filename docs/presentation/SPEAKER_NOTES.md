@@ -82,7 +82,8 @@ Follow [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md). If network/API fails, skip to Results
 
 ## Slide 15 — Results (30 sec)
 
-Hit the three metrics and “15 tests passing.”
+Hit the temporal metrics vs baselines and “tests passing.”
+Do not oversell absolute MAE/AUC from synthetic data.
 
 ## Slide 16 — Skills (30 sec)
 

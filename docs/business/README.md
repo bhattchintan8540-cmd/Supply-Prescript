@@ -14,6 +14,7 @@ the Python implementation. Read these before polishing slides further.
 | [07_production_data_requirements.md](07_production_data_requirements.md) | What a production version would need |
 | [08_requirements_stories_acceptance.md](08_requirements_stories_acceptance.md) | FR, stories, acceptance criteria |
 | [09_requirement_test_traceability.md](09_requirement_test_traceability.md) | Requirement → test map |
+| [10_design_decisions.md](10_design_decisions.md) | Why each math construct matches the business |
 
 ## Interview prompts these docs answer
 
