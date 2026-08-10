@@ -1,33 +1,48 @@
 # Q&A cheat sheet
 
-Short answers you can give if asked.
+Short answers you can give if asked. Pair with [docs/business/](../business/).
 
-### Why mock data?
-Real multi-year supplier lead-time logs are confidential. Mock data with supplier shocks and peak season lets us demonstrate the full loop reproducibly.
+### Why mock / synthetic data?
+Real multi-year supplier lead-time logs are confidential. Synthetic data with supplier reliability, peak season, and a calendar bad quarter lets us demonstrate the full loop reproducibly. Metrics recover those programmed relationships — they are not field accuracy claims.
 
-### Is MAE ~1.9 days “good enough”?
-For prescribing *options* (not auto-booking), yes as a baseline. The point of the closed loop is to measure and improve with real outcomes.
+### Is MAE / AUC “good enough”?
+Quote them only with the caveat above, and always versus the supplier-mean / late-rate **baselines** under a **temporal** split. For prescribing options (not auto-booking), lift vs baseline matters more than a raw AUC number.
 
 ### Why two models (classifier + regressor)?
-Probability and magnitude answer different decisions. High probability of a small delay ≠ certain large delay.
+Probability and magnitude answer different decisions. The optimizer uses both: expected holding = P(delay) × rate × days. High probability of a moderate delay ≠ low probability of a large one.
 
-### Why PuLP / linear programming?
-Prescriptive analytics needs constraints (budget, max delay) and an objective (min cost). An LP is the clear, explainable way to blend channels.
+### Why isn’t probability just decorative?
+It isn’t. Delay Launch and residual secondary holding scale with P(delay). Air residual delay is treated as nearly certain once that channel is activated.
+
+### Why PuLP / MILP?
+Prescriptive analytics needs constraints (budget including fixed fees, operational delay) and an objective (min expected cost). Binaries activate channels so fixed handling fees enter the model — not as a post-hoc patch.
+
+### Why not always weighted-average delay?
+If production waits for the last unit, operational delay is the **makespan**. Weighted average only makes sense when partial fulfillment creates usable value (`SP_PARTIAL_FULFILLMENT_USEFUL=1`).
 
 ### Does the system decide automatically?
 No. It recommends; a human executes. That matches real ops governance.
 
-### What is Decision ROI?
-After outcomes are logged: average predicted vs actual cost, average error %, and % of decisions that stayed within budget.
+### What is Decision / Intervention ROI?
+Avoided loss = no-action (Delay Launch) cost − actual cost after intervention. ROI% = avoided loss / no-action cost. See `/decisions/roi`.
+
+### What about the old “ROI” numbers (error %, on-budget %)?
+Those are **cost forecast accuracy and budget adherence** (`/decisions/cost-accuracy`). Useful — but not ROI.
 
 ### What is drift?
-Average relative cost error on resolved decisions. Above 15% → retrain trigger.
+Average relative cost error on resolved decisions. Above 15% → retrain trigger. Retrain fits on shipments **plus** outcomes that have feature snapshots.
+
+### Is secondary supplier real selection?
+No — it is a **scenario-based** intervention option for the prototype. Production would need qualification, capacity, MOQ, lead time, contracts.
+
+### Software tests vs analytical validity?
+Tests prove the code implements the contracts (ranges, constraints, API lifecycle). They do not prove probabilities are calibrated on real networks.
 
 ### Would this work with Postgres?
 Yes — set `DATABASE_URL` and use `docker compose up -d`. SQLite is the zero-setup demo default.
 
 ### What’s missing for production?
-Auth, richer shipment↔decision linkage for training on outcomes, calibrated freight costs, monitoring/alerting, and a scheduler for retrain.
+Auth, richer inventory/MRP inputs, calibrated freight contracts, real alternate-supplier selection, monitoring/alerting, scheduler for retrain. See `docs/business/07_production_data_requirements.md`.
 
 ### Where is the code?
-GitHub repo `Supply-Prescript`, folders `week1`–`week4`, beginner guide `STEP_BY_STEP.md`.
+GitHub repo folders `week1`–`week4`, business docs in `docs/business/`, beginner guide `STEP_BY_STEP.md`.

@@ -210,7 +210,7 @@
     <p class="eyebrow">Axlero Solutions · Data Analytics · Project 3</p>
     <h1>SupplyPrescript</h1>
     <p class="subtitle">Closed-loop analytics for supply-chain delays: predict the risk, prescribe the action, measure whether it worked, and retrain when the world changes.</p>
-    <p style="margin-top:2rem;opacity:0.85">Predictive → Prescriptive → Write-back → ROI → Continuous learning</p>
+    <p style="margin-top:2rem;opacity:0.85">Predictive → Prescriptive → Write-back → True ROI → Outcome-aware retrain</p>
   </section>
 
   <!-- 2 -->
@@ -288,7 +288,7 @@
       <tbody>
         <tr><td>1</td><td>Mock data + EDA + XGBoost</td><td>Learn delay risk from history</td></tr>
         <tr><td>2</td><td>Cost formulas + PuLP + UI</td><td>Turn prediction into options</td></tr>
-        <tr><td>3</td><td>FastAPI + decisions DB</td><td>Write-back, outcomes, ROI</td></tr>
+        <tr><td>3</td><td>FastAPI + decisions DB</td><td>Write-back, outcomes, true ROI</td></tr>
         <tr><td>4</td><td>Retrain trigger</td><td>If drift is high, refit the model</td></tr>
       </tbody>
     </table>
@@ -338,7 +338,7 @@
       <div class="card accent">
         <h3>Classifier</h3>
         <p>Probability the delay is meaningful (&gt; 3 days).</p>
-        <p><strong>AUC ≈ 0.79</strong></p>
+        <p><strong>Temporal AUC</strong> <span style='opacity:.75'>(synthetic)</span></p>
       </div>
       <div class="card accent">
         <h3>Regressor</h3>
@@ -422,7 +422,7 @@
       <div class="card accent">
         <h3>B · Dashboard (4 min)</h3>
         <p><code>http://127.0.0.1:8000/ui/</code></p>
-        <p>Click <strong>Demo A / B / C</strong> → Execute → Log outcome → ROI.</p>
+        <p>Click <strong>Demo A / B / C</strong> → Execute → Log outcome → ROI vs no-action.</p>
       </div>
     </div>
     <p class="muted" style="margin-top:1rem">Script: <code>docs/presentation/DEMO_SCRIPT.md</code>. Backup: EDA figures + this deck.</p>
@@ -434,11 +434,11 @@
     <h2>What we can show today</h2>
     <div class="grid-3">
       <div class="card"><div class="metric">~1.87d</div><div class="metric-label">MAE on held-out delays</div></div>
-      <div class="card"><div class="metric">0.79</div><div class="metric-label">AUC late classifier</div></div>
+      <div class="card"><div class="metric">P×$</div><div class="metric-label">Expected holding in MILP</div></div>
       <div class="card"><div class="metric">15</div><div class="metric-label">automated tests passing</div></div>
     </div>
     <ul>
-      <li>End-to-end loop works: prescribe → decide → outcome → ROI</li>
+      <li>End-to-end loop: prescribe → decide → outcome → ROI vs no-action</li>
       <li>Optimizer respects budget / delay constraints when feasible</li>
       <li>Portfolio-ready GitHub structure (weeks, docs, notebook, figures)</li>
     </ul>
@@ -457,7 +457,7 @@
       </ul>
       <ul>
         <li>API design & write-back patterns</li>
-        <li>Decision ROI / model monitoring mindset</li>
+        <li>True ROI + cost accuracy / outcome-aware retrain</li>
         <li>Testing & reproducible project layout</li>
         <li>Communicating analytics to non-ML stakeholders</li>
       </ul>

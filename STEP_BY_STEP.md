@@ -85,18 +85,18 @@ Try this loop once:
 1. Submit a shipment → get 4 options
 2. Click **Execute decision** on one option
 3. Click **Log outcome** and enter a real cost/delay
-4. Refresh ROI — you should see average error % appear
+4. Refresh measurement — Intervention ROI (vs no action) and cost accuracy appear
 
 ---
 
-## Step 4 — Week 4: continuous learning
+## Step 4 — Week 4: drift-triggered retrain
 
 ```bash
 python week4/retrain.py            # only if drift is high
 python week4/retrain.py --force    # always retrain
 ```
 
-This is the "if predictions are wrong often, retrain" switch.
+Retrain fits on shipments plus eligible outcomes that stored a feature snapshot.
 
 ---
 

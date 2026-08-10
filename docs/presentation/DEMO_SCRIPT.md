@@ -78,11 +78,11 @@ Open **http://127.0.0.1:8000/ui/**
 
 4. On Demo C results, click **Execute decision** on **Optimizer Recommended Split** (or Secondary Supplier).
 5. Click **Log outcome** — accept the suggested cost (~8% above predicted) and delay `2`.
-6. Point at **Decision ROI** — error % and on-budget rate appear.
+6. Point at **Closed-loop measurement** — Intervention ROI vs Delay Launch, and cost accuracy separately.
 
 **Closing line:**
 
-> “That’s the closed loop: the model predicted, we prescribed, a human chose, we logged reality, and we can retrain if we drift.”
+> “That’s the closed loop: the model predicted with probability and magnitude, we prescribed expected-cost options under an operational delay rule, a human chose, we logged reality against a no-action baseline, and we can retrain on those outcomes if we drift.”
 
 ---
 
