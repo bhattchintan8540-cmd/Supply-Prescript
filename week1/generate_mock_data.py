@@ -4,9 +4,15 @@ Week 1 - mock data generator.
 Real lead-time history is exactly the kind of thing you can't just
 download, so this fabricates a plausible three-year shipment log:
 a handful of suppliers/regions with different baseline reliability,
-a peak-season effect, and a couple of "shock" windows (a supplier
-having a genuinely bad quarter) so the delay model has something
-non-trivial to learn.
+a peak-season effect, and a true calendar "bad quarter" for one
+supplier so the delay model has a temporal pattern to learn — and so
+train/validation/test can be split by shipment date rather than at
+random.
+
+Important honesty note for interviews: every relationship below is
+programmed into the synthetic environment. Model metrics therefore
+show that XGBoost recovers those relationships, not that the same
+AUC/MAE would hold on a real carrier/supplier network.
 
 Run directly to (re)build data/shipments.csv:
     python week1/generate_mock_data.py
@@ -14,6 +20,7 @@ Run directly to (re)build data/shipments.csv:
 from __future__ import annotations
 
 import random
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +29,18 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = ROOT / "data" / "shipments.csv"
 RNG_SEED = 42
+
+# Three calendar years of synthetic history. Temporal validation in
+# DelayModel.fit() trains on earlier shipments and tests on later ones.
+HISTORY_START = date(2023, 1, 1)
+HISTORY_END = date(2025, 12, 31)
+
+# True "bad quarter": Delta Cove deteriorates for a contiguous period,
+# not a periodic record-index shock. That matches the business story
+# ("supplier had a bad quarter") and gives temporal validation something
+# meaningful to detect.
+DELTA_COVE_BAD_QUARTER_START = date(2024, 7, 1)
+DELTA_COVE_BAD_QUARTER_END = date(2024, 9, 30)
 
 SUPPLIERS = {
     # name -> (baseline reliability, region)
@@ -46,6 +65,18 @@ def _month_is_peak(month: int) -> bool:
     return month in (11, 12)
 
 
+def _random_shipment_date(rng: random.Random) -> date:
+    span_days = (HISTORY_END - HISTORY_START).days
+    return HISTORY_START + timedelta(days=rng.randint(0, span_days))
+
+
+def _in_bad_quarter(supplier: str, shipment_date: date) -> bool:
+    return (
+        supplier == "Delta Cove Electronics"
+        and DELTA_COVE_BAD_QUARTER_START <= shipment_date <= DELTA_COVE_BAD_QUARTER_END
+    )
+
+
 def build(n_rows: int = 4000, seed: int = RNG_SEED) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     py_rng = random.Random(seed)
@@ -53,11 +84,12 @@ def build(n_rows: int = 4000, seed: int = RNG_SEED) -> pd.DataFrame:
     rows = []
     supplier_names = list(SUPPLIERS.keys())
 
-    for i in range(n_rows):
+    for _ in range(n_rows):
         supplier = py_rng.choice(supplier_names)
         reliability, region = SUPPLIERS[supplier]
         sku = py_rng.choice(SKUS)
-        month = py_rng.randint(1, 12)
+        shipment_date = _random_shipment_date(py_rng)
+        month = shipment_date.month
         peak = _month_is_peak(month)
 
         distance = REGION_BASE_DISTANCE_KM[region] * rng.uniform(0.85, 1.15)
@@ -67,11 +99,10 @@ def build(n_rows: int = 4000, seed: int = RNG_SEED) -> pd.DataFrame:
         qty = int(rng.integers(500, 20_000))
         unit_cost = round(float(rng.uniform(0.8, 40)), 2)
 
-        # Bad-quarter shock: Delta Cove has a rough stretch mid-dataset,
-        # this is the pattern the model needs to actually pick up on
-        # rather than just memorizing supplier averages.
+        # Calendar-bounded supplier deterioration (a real quarter), not a
+        # modulo-index shock on the row number.
         shock = 0.0
-        if supplier == "Delta Cove Electronics" and i % 7 == 0:
+        if _in_bad_quarter(supplier, shipment_date):
             shock = rng.uniform(4, 11)
 
         peak_penalty = rng.uniform(1.5, 4.0) if peak else 0.0
@@ -80,6 +111,7 @@ def build(n_rows: int = 4000, seed: int = RNG_SEED) -> pd.DataFrame:
 
         rows.append(
             {
+                "shipment_date": shipment_date.isoformat(),
                 "sku": sku,
                 "supplier": supplier,
                 "origin_region": region,
@@ -92,7 +124,7 @@ def build(n_rows: int = 4000, seed: int = RNG_SEED) -> pd.DataFrame:
             }
         )
 
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows).sort_values("shipment_date").reset_index(drop=True)
 
 
 def main() -> None:
@@ -100,6 +132,14 @@ def main() -> None:
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_PATH, index=False)
     print(f"wrote {len(df)} rows -> {OUT_PATH}")
+    print(f"date range: {df['shipment_date'].min()} .. {df['shipment_date'].max()}")
+    bad = df[
+        (df["supplier"] == "Delta Cove Electronics")
+        & (df["shipment_date"] >= DELTA_COVE_BAD_QUARTER_START.isoformat())
+        & (df["shipment_date"] <= DELTA_COVE_BAD_QUARTER_END.isoformat())
+    ]
+    print(f"Delta Cove bad-quarter rows: {len(bad)} "
+          f"({DELTA_COVE_BAD_QUARTER_START} .. {DELTA_COVE_BAD_QUARTER_END})")
     print(df["actual_delay_days"].describe())
 
 
