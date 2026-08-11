@@ -5,6 +5,7 @@ data/*.db
 data/*.csv
 data/*.joblib
 data/metrics.json
+data/dataset_split_summary.json
 data/test_*.db
 !data/.gitkeep
 .pytest_cache/

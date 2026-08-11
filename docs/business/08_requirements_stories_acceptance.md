@@ -31,4 +31,4 @@
 | Fixed fees | `within_budget` reflects variable + fixed fees from the MILP |
 | True ROI | `/decisions/roi` uses `no_action_cost − actual_cost` |
 | Closed-loop train | Resolved decisions with feature JSON appear in retrain training frame |
-| Temporal validation | Metrics report `validation_strategy=temporal_70_15_15` when dates exist |
+| Temporal validation | Metrics report `validation_strategy=temporal_60_20_20` when dates exist |

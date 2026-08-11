@@ -12,7 +12,8 @@ not a decorative metric.
 
 Validation
 ----------
-When `shipment_date` is present, fit() uses a temporal split:
+When `shipment_date` is present, fit() uses a temporal split
+(60% train / 20% validation / 20% test):
 train on earlier shipments, validate on the middle window, test on
 the most recent period. That asks the business question correctly:
 can historically observed behavior predict *future* outcomes?
@@ -44,8 +45,8 @@ from sklearn.model_selection import train_test_split
 from .features import build_features, DELAY_FLAG_THRESHOLD_DAYS
 
 
-def _temporal_split_masks(dates: pd.Series, train_frac: float = 0.70, val_frac: float = 0.15):
-    """Return boolean masks for train / val / test ordered by time."""
+def _temporal_split_masks(dates: pd.Series, train_frac: float = 0.60, val_frac: float = 0.20):
+    """Return boolean masks for train / val / test ordered by time (60:20:20)."""
     order = dates.argsort(kind="mergesort")
     n = len(dates)
     n_train = int(n * train_frac)
@@ -113,22 +114,47 @@ class DelayModel:
             dates = pd.to_datetime(shipments["shipment_date"])
             train_mask, val_mask, test_mask = _temporal_split_masks(dates)
             # Fit on train only; report test metrics. Val is available for
-            # future threshold tuning / calibration work.
+            # threshold tuning / calibration work.
             X_train, X_test = X.loc[train_mask], X.loc[test_mask]
             y_days_train, y_days_test = y_days.loc[train_mask], y_days.loc[test_mask]
             y_flag_train, y_flag_test = y_flag.loc[train_mask], y_flag.loc[test_mask]
             meta_train = shipments.loc[train_mask]
             meta_test = shipments.loc[test_mask]
-            validation_strategy = "temporal_70_15_15"
+            validation_strategy = "temporal_60_20_20"
             n_val = int(val_mask.sum())
         else:
-            X_train, X_test, y_days_train, y_days_test, y_flag_train, y_flag_test, meta_train, meta_test = (
-                train_test_split(
-                    X, y_days, y_flag, shipments, test_size=0.2, random_state=13
-                )
+            # Random 60:20:20 fallback when dates are missing.
+            (
+                X_temp,
+                X_test,
+                y_days_temp,
+                y_days_test,
+                y_flag_temp,
+                y_flag_test,
+                meta_temp,
+                meta_test,
+            ) = train_test_split(
+                X, y_days, y_flag, shipments, test_size=0.20, random_state=13
             )
-            validation_strategy = "random_80_20_fallback"
-            n_val = 0
+            (
+                X_train,
+                _X_val,
+                y_days_train,
+                _y_days_val,
+                y_flag_train,
+                _y_flag_val,
+                meta_train,
+                _meta_val,
+            ) = train_test_split(
+                X_temp,
+                y_days_temp,
+                y_flag_temp,
+                meta_temp,
+                test_size=0.25,  # 0.25 of remaining 80% => 20% overall
+                random_state=13,
+            )
+            validation_strategy = "random_60_20_20_fallback"
+            n_val = int(len(_X_val))
 
         # --- baselines from the training window only (no leakage) ---
         self._global_mean_delay = float(y_days_train.mean())
