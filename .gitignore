@@ -6,6 +6,8 @@ data/*.csv
 data/*.joblib
 data/metrics.json
 data/dataset_split_summary.json
+data/ml_evaluation/
+exports/
 data/test_*.db
 !data/.gitkeep
 .pytest_cache/

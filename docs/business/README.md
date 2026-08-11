@@ -16,6 +16,7 @@ the Python implementation. Read these before polishing slides further.
 | [09_requirement_test_traceability.md](09_requirement_test_traceability.md) | Requirement → test map |
 | [10_design_decisions.md](10_design_decisions.md) | Why each math construct matches the business |
 | [11_dataset_analysis.md](11_dataset_analysis.md) | Train / data validation / testing 60:20:20 split |
+| [12_xgboost_ml_process.md](12_xgboost_ml_process.md) | XGBoost ML process, verdict, confusion matrix (TP/FP) |
 
 ## Interview prompts these docs answer
 

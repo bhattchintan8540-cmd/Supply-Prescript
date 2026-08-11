@@ -12,6 +12,11 @@ there's anything to prescribe.
   `train.csv` / `validation.csv` / `test.csv` under `data/` (gitignored).
   See `docs/business/11_dataset_analysis.md` and
   `notebooks/02_dataset_analysis.ipynb`.
+- `evaluate_xgboost.py` — **ML Process for XGBoost**: fit, verdict vs
+  baselines, confusion matrix + TP/FP annotated plot. Writes a
+  copy-ready folder under `exports/Data Analytics by Axlero/` (gitignored)
+  plus a zip you can extract to
+  `C:\Users\ACER\Desktop\Data Analytics by Axlero`.
 - `explore_data.py` — beginner-friendly EDA: summary tables + charts in
   `docs/figures/`. Pair with `notebooks/01_exploratory_analysis.ipynb`.
 - `features.py` — turns a shipment row into a numeric feature vector.
@@ -33,6 +38,7 @@ there's anything to prescribe.
 ```bash
 python week1/generate_mock_data.py
 python week1/split_dataset.py       # 60:20:20 train / validation / test CSVs
+python week1/evaluate_xgboost.py    # ML process + confusion matrix (copy-ready zip)
 python week1/explore_data.py
 python week1/train_model.py
 python week1/demo_model.py          # live model demo for presentations
