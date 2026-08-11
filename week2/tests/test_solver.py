@@ -129,3 +129,37 @@ def test_fixed_fees_are_inside_budget_constraint():
     assert result["within_budget"] is False
     assert result["budget_relaxed"] is True
     assert result["fixed_fees_usd"] >= 900.0
+    assert result.get("infeasible") is False
+
+
+def test_infeasible_makespan_returns_empty_allocation():
+    """Impossible SLA must not invent a fake Optimal-looking plan."""
+    result = solve_optimal_allocation(
+        unit_cost_usd=10.0,
+        order_quantity=1000,
+        predicted_delay_days=12.0,
+        budget_cap_usd=500_000,
+        max_acceptable_delay_days=0.0,
+        predicted_delay_probability=1.0,
+        partial_fulfillment_useful=False,
+    )
+    assert result["status"] == "Infeasible"
+    assert result["infeasible"] is True
+    assert sum(result["allocation_units"].values()) == 0.0
+    assert result["within_budget"] is False
+    assert result["message"]
+
+
+def test_pure_options_flag_sla_when_ceiling_provided():
+    options = pure_options(
+        unit_cost_usd=12.0,
+        order_quantity=1000,
+        predicted_delay_days=10.0,
+        budget_cap_usd=200_000,
+        predicted_delay_probability=0.9,
+        max_acceptable_delay_days=5.0,
+    )
+    delay = next(o for o in options if o["label"] == "Delay Launch")
+    air = next(o for o in options if o["label"] == "Air Freight")
+    assert delay["within_sla"] is False
+    assert air["within_sla"] is True

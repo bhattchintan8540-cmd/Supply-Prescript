@@ -157,15 +157,22 @@ def pure_options(
     predicted_delay_days: float,
     budget_cap_usd: float,
     predicted_delay_probability: float = 1.0,
+    max_acceptable_delay_days: float | None = None,
 ) -> list[dict]:
     """The three 100%-allocated cards shown on the dashboard.
 
     Costs are expected costs (probability enters Delay Launch / secondary).
+    When max_acceptable_delay_days is set, also flag within_sla.
     """
     quotes = _channel_quotes(unit_cost_usd, predicted_delay_days, predicted_delay_probability)
     options = []
     for quote in quotes.values():
         cost = round(quote.expected_total_cost(order_quantity), 2)
+        within_sla = (
+            True
+            if max_acceptable_delay_days is None
+            else quote.resulting_delay_days <= float(max_acceptable_delay_days)
+        )
         options.append(
             {
                 "label": quote.label,
@@ -173,6 +180,7 @@ def pure_options(
                 "cost_usd": cost,
                 "resulting_delay_days": quote.resulting_delay_days,
                 "within_budget": cost <= budget_cap_usd,
+                "within_sla": within_sla,
             }
         )
     return options
@@ -272,6 +280,10 @@ def solve_optimal_allocation(
         prob.solve(pulp.PULP_CBC_CMD(msg=False))
         return prob, x, y, operational_delay
 
+    delay_constraint_mode = (
+        "weighted_average" if partial_fulfillment_useful else "operational_makespan"
+    )
+
     prob, x, y, operational_delay_var = _build_and_solve(enforce_budget=True)
     budget_relaxed = False
     if pulp.LpStatus[prob.status] != "Optimal":
@@ -280,6 +292,30 @@ def solve_optimal_allocation(
         # over budget rather than returning nothing.
         prob, x, y, operational_delay_var = _build_and_solve(enforce_budget=False)
         budget_relaxed = True
+
+    status = pulp.LpStatus[prob.status]
+    if status != "Optimal":
+        # Delay SLA (or other hard constraints) still infeasible even without
+        # the budget — do not invent a fake allocation from CBC leftovers.
+        return {
+            "status": status,
+            "budget_relaxed": budget_relaxed,
+            "allocation_units": {k: 0.0 for k in channel_keys},
+            "channels_activated": {k: False for k in channel_keys},
+            "total_cost_usd": 0.0,
+            "fixed_fees_usd": 0.0,
+            "weighted_avg_delay_days": 0.0,
+            "operational_delay_days": 0.0,
+            "delay_constraint_mode": delay_constraint_mode,
+            "resulting_delay_days": 0.0,
+            "within_budget": False,
+            "predicted_delay_probability_used": round(float(predicted_delay_probability), 3),
+            "infeasible": True,
+            "message": (
+                f"No feasible allocation under max delay {D_max:g} days "
+                f"({delay_constraint_mode}). Relax the SLA or allow partial fulfillment."
+            ),
+        }
 
     allocation = {k: round(v.value() or 0.0, 1) for k, v in x.items()}
     activated = {k: bool(round(y[k].value() or 0.0)) for k in channel_keys}
@@ -294,20 +330,18 @@ def solve_optimal_allocation(
 
     if partial_fulfillment_useful:
         operational_delay = weighted_delay
-        delay_constraint_mode = "weighted_average"
     else:
         used_delays = [quotes[k].resulting_delay_days for k in channel_keys if allocation[k] > 0]
         operational_delay = round(max(used_delays) if used_delays else 0.0, 1)
         if operational_delay_var is not None and operational_delay_var.value() is not None:
             operational_delay = round(float(operational_delay_var.value()), 1)
-        delay_constraint_mode = "operational_makespan"
 
     # Resulting delay reported on the optimizer card: the operationally
     # relevant figure for the active constraint mode.
     reported_delay = operational_delay if not partial_fulfillment_useful else weighted_delay
 
     return {
-        "status": pulp.LpStatus[prob.status],
+        "status": status,
         "budget_relaxed": budget_relaxed,
         "allocation_units": allocation,
         "channels_activated": activated,
@@ -319,4 +353,6 @@ def solve_optimal_allocation(
         "resulting_delay_days": reported_delay,
         "within_budget": total_cost <= budget_cap_usd,
         "predicted_delay_probability_used": round(float(predicted_delay_probability), 3),
+        "infeasible": False,
+        "message": None,
     }
