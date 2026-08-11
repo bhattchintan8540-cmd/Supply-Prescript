@@ -10,6 +10,11 @@ Everything you need to present **SupplyPrescript** (Project 3).
 | [`ONE_PAGER.md`](ONE_PAGER.md) | Print/PDF handout for evaluators |
 | [`Q&A_CHEAT_SHEET.md`](Q&A_CHEAT_SHEET.md) | Short answers to likely questions |
 | [`GOOGLE_SLIDES.md`](GOOGLE_SLIDES.md) | Copy-paste outline into Google Slides / PowerPoint |
+| [`../business/`](../business/) | Business problem → math → KPI traceability |
+
+Before presenting, skim `../business/10_design_decisions.md` so you can
+defend probability-in-the-objective, true ROI, makespan, fixed fees, and
+outcome-aware retraining.
 
 ## Show the model in 30 seconds
 
