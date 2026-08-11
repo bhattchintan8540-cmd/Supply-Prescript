@@ -38,6 +38,8 @@ def summarize(df: pd.DataFrame) -> None:
     print(f"rows: {len(df):,}")
     print(f"suppliers: {df['supplier'].nunique()}")
     print(f"skus: {df['sku'].nunique()}")
+    if "shipment_date" in df.columns:
+        print(f"date range: {df['shipment_date'].min()} .. {df['shipment_date'].max()}")
     print()
     print("Delay days by supplier (mean / p90):")
     by_supplier = df.groupby("supplier")["actual_delay_days"].agg(["mean", lambda s: s.quantile(0.9)])
@@ -48,6 +50,20 @@ def summarize(df: pd.DataFrame) -> None:
     print(f"share of shipments late > 3 days: {late_rate:.1%}")
     peak = df.groupby("is_peak_season")["actual_delay_days"].mean()
     print(f"mean delay off-peak vs peak: {peak.get(False, float('nan')):.2f}d / {peak.get(True, float('nan')):.2f}d")
+    if "shipment_date" in df.columns:
+        delta = df[df["supplier"] == "Delta Cove Electronics"].copy()
+        delta["shipment_date"] = pd.to_datetime(delta["shipment_date"])
+        bad = delta[
+            (delta["shipment_date"] >= "2024-07-01") & (delta["shipment_date"] <= "2024-09-30")
+        ]
+        other = delta[
+            ~((delta["shipment_date"] >= "2024-07-01") & (delta["shipment_date"] <= "2024-09-30"))
+        ]
+        if len(bad) and len(other):
+            print(
+                f"Delta Cove mean delay bad-quarter vs other: "
+                f"{bad['actual_delay_days'].mean():.2f}d / {other['actual_delay_days'].mean():.2f}d"
+            )
 
 
 def plot_delay_distribution(df: pd.DataFrame) -> Path:
@@ -56,7 +72,7 @@ def plot_delay_distribution(df: pd.DataFrame) -> Path:
     ax.axvline(3, color="#a4462f", linestyle="--", label="late threshold (3 days)")
     ax.set_xlabel("Actual delay (days)")
     ax.set_ylabel("Shipments")
-    ax.set_title("Delay distribution — SupplyPrescript mock history")
+    ax.set_title("Delay distribution — SupplyPrescript synthetic history")
     ax.legend()
     fig.tight_layout()
     out = FIG_DIR / "delay_distribution.png"
@@ -102,6 +118,30 @@ def plot_peak_effect(df: pd.DataFrame) -> Path:
     return out
 
 
+def plot_delta_cove_bad_quarter(df: pd.DataFrame) -> Path | None:
+    """Show calendar-bounded supplier deterioration (not a row-index shock)."""
+    if "shipment_date" not in df.columns:
+        return None
+    delta = df[df["supplier"] == "Delta Cove Electronics"].copy()
+    if delta.empty:
+        return None
+    delta["shipment_date"] = pd.to_datetime(delta["shipment_date"])
+    delta = delta.sort_values("shipment_date")
+    monthly = delta.set_index("shipment_date")["actual_delay_days"].resample("MS").mean()
+
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    ax.plot(monthly.index, monthly.values, color="#1c2430", marker="o", markersize=3)
+    ax.axvspan(pd.Timestamp("2024-07-01"), pd.Timestamp("2024-09-30"), color="#a4462f", alpha=0.2, label="Bad quarter")
+    ax.set_ylabel("Mean delay (days)")
+    ax.set_title("Delta Cove — monthly mean delay (calendar bad quarter)")
+    ax.legend()
+    fig.tight_layout()
+    out = FIG_DIR / "delta_cove_bad_quarter.png"
+    fig.savefig(out, dpi=140)
+    plt.close(fig)
+    return out
+
+
 def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
     df = load()
@@ -111,6 +151,9 @@ def main() -> None:
         plot_delay_by_supplier(df),
         plot_peak_effect(df),
     ]
+    bad_q = plot_delta_cove_bad_quarter(df)
+    if bad_q is not None:
+        paths.append(bad_q)
     print()
     print("figures written:")
     for path in paths:
