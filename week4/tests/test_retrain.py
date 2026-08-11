@@ -1,6 +1,8 @@
 import json
 from datetime import datetime, timezone
 
+import pytest
+
 from week1 import models
 from week1.database import SessionLocal
 from week4.retrain import average_cost_drift, maybe_retrain, outcomes_as_training_rows
@@ -60,6 +62,8 @@ def test_outcomes_as_training_rows_uses_feature_snapshots():
             budget_cap_usd=100000,
             actual_cost_usd=91000,
             actual_delay_days=1.5,
+            # Decision-time date (not resolution time) drives temporal split.
+            created_at=datetime(2026, 7, 15, tzinfo=timezone.utc),
             resolved_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
         )
         session.add(decision)
@@ -69,7 +73,53 @@ def test_outcomes_as_training_rows_uses_feature_snapshots():
         assert len(rows) == 1
         assert rows.iloc[0]["actual_delay_days"] == 1.5
         assert rows.iloc[0]["supplier"] == "NovaChip Manufacturing"
-        assert rows.iloc[0]["shipment_date"] == "2026-08-01"
+        assert rows.iloc[0]["shipment_date"] == "2026-07-15"
+    finally:
+        session.close()
+
+
+def test_should_retrain_triggers_on_hard_miss_even_if_cost_ok():
+    from week4.retrain import should_retrain
+
+    diagnostics = {
+        "cost_mape": 0.05,  # under 15%
+        "hard_miss_rate": 0.45,
+        "outcome_brier": 0.12,
+        "delay_mae_days": 1.0,
+    }
+    do_it, reason = should_retrain(diagnostics)
+    assert do_it is True
+    assert "hard miss" in reason
+
+
+def test_prediction_drift_diagnostics_reports_signals():
+    from week4.retrain import prediction_drift_diagnostics
+
+    _clear_decisions()
+    session = SessionLocal()
+    try:
+        session.add(
+            models.Decision(
+                shipment_sku="MICROCHIP-A2",
+                predicted_delay_days=2.0,
+                predicted_delay_probability=0.1,
+                options_json="[]",
+                chosen_option_label="Delay Launch",
+                predicted_cost_usd=10000,
+                no_action_cost_usd=10000,
+                budget_cap_usd=100000,
+                actual_cost_usd=11000,
+                actual_delay_days=8.0,  # late, but model was confident on-time
+                resolved_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
+            )
+        )
+        session.commit()
+        diag = prediction_drift_diagnostics(session)
+        assert diag["n_resolved"] == 1
+        assert diag["cost_mape"] == pytest.approx(0.1)
+        assert diag["delay_mae_days"] == pytest.approx(6.0)
+        assert diag["hard_miss_rate"] == 1.0
+        assert diag["outcome_brier"] is not None
     finally:
         session.close()
 

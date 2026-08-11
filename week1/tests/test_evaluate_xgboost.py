@@ -19,6 +19,22 @@ def test_verdict_passes_when_model_beats_baseline():
         "precision": 0.8,
         "recall": 0.7,
         "f1": 0.75,
+        "brier_score": 0.15,
+        "ece": 0.05,
+        "probability_calibrated": True,
+        "clf_reg_consistency_ok": True,
+        "auc_lift_bootstrap": {
+            "lift": 0.15,
+            "ci_low": 0.08,
+            "ci_high": 0.22,
+            "significant": True,
+        },
+        "mae_lift_bootstrap": {
+            "lift": 0.5,
+            "ci_low": 0.2,
+            "ci_high": 0.8,
+            "significant": True,
+        },
         "confusion_matrix": [[80, 10], [5, 40]],
     }
     verdict = ev._verdict(metrics)
@@ -36,7 +52,43 @@ def test_verdict_fails_when_auc_below_baseline():
         "precision": 0.5,
         "recall": 0.4,
         "f1": 0.45,
+        "brier_score": 0.30,
+        "ece": 0.20,
+        "probability_calibrated": False,
+        "clf_reg_consistency_ok": True,
+        "auc_lift_bootstrap": {
+            "lift": -0.1,
+            "ci_low": -0.2,
+            "ci_high": 0.01,
+            "significant": False,
+        },
         "confusion_matrix": [[50, 40], [30, 20]],
+    }
+    verdict = ev._verdict(metrics)
+    assert verdict["model_doing_right"] is False
+
+
+def test_verdict_fails_on_soft_lift_even_if_barely_above_baseline():
+    """Ruthless gate: AUC = baseline is no longer a pass."""
+    metrics = {
+        "auc": 0.70,
+        "baseline_auc": 0.70,
+        "mae_days": 1.93,
+        "baseline_mae_days": 1.94,
+        "precision": 0.6,
+        "recall": 0.6,
+        "f1": 0.6,
+        "brier_score": 0.21,
+        "ece": 0.10,
+        "probability_calibrated": True,
+        "clf_reg_consistency_ok": True,
+        "auc_lift_bootstrap": {
+            "lift": 0.0,
+            "ci_low": -0.05,
+            "ci_high": 0.05,
+            "significant": False,
+        },
+        "confusion_matrix": [[70, 20], [20, 40]],
     }
     verdict = ev._verdict(metrics)
     assert verdict["model_doing_right"] is False

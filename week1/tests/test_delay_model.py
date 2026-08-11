@@ -79,3 +79,26 @@ def test_fit_reports_baseline_and_classifier_diagnostics(trained_model):
     assert "precision" in metrics and "recall" in metrics and "f1" in metrics
     assert "confusion_matrix" in metrics
     assert metrics["baseline_mae_days"] >= 0
+    # Scientific hardening: val must be used; calibration + richer metrics present.
+    assert metrics["n_val"] > 0
+    assert "early_stopping" in metrics["validation_used_for"]
+    assert "isotonic_calibration" in metrics["validation_used_for"]
+    assert "decision_threshold_tuning" in metrics["validation_used_for"]
+    assert "rmse_days" in metrics and "r2_days" in metrics
+    assert "pr_auc" in metrics and "ece" in metrics
+    assert "auc_lift_bootstrap" in metrics and "mae_lift_bootstrap" in metrics
+    assert 0.0 < metrics["decision_threshold"] < 1.0
+    assert metrics["probability_calibrated"] is True
+
+
+def test_calibrated_probabilities_round_trip(tmp_path, trained_model):
+    model, df, _ = trained_model
+    sample = df.iloc[3].drop(labels=["actual_delay_days"], errors="ignore").to_dict()
+    sample.pop("shipment_date", None)
+    before = model.predict_one(sample)
+    path = tmp_path / "calibrated.joblib"
+    model.save(path)
+    reloaded = DelayModel.load(path)
+    after = reloaded.predict_one(sample)
+    assert before == pytest.approx(after)
+    assert reloaded.decision_threshold == pytest.approx(model.decision_threshold)
