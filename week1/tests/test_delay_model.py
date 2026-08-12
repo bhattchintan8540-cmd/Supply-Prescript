@@ -68,7 +68,7 @@ def test_fit_uses_temporal_split_when_dates_present(trained_model):
     _, df, metrics = trained_model
     if "shipment_date" not in df.columns:
         pytest.skip("no shipment_date column")
-    assert metrics["validation_strategy"] == "temporal_70_15_15"
+    assert metrics["validation_strategy"] == "temporal_60_20_20"
     assert metrics["n_train"] > 0 and metrics["n_test"] > 0
     assert metrics["data_is_synthetic"] is True
 
