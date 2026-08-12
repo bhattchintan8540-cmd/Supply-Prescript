@@ -9,7 +9,7 @@ Not a scheduler or a Kafka consumer - just a function you'd point cron
   3. if the average drift crosses RETRAIN_DRIFT_THRESHOLD, rebuilds a
      training frame from shipments.csv PLUS eligible resolved outcomes
      (those with a shipment feature snapshot and an actual delay label)
-  4. refits DelayModel and writes the artifact
+  4. refits DelayModel and writes the artifact + metrics.json
 
 This is closed-loop learning when feature snapshots were stored at
 decision time. Decisions without shipment_features_json still contribute
@@ -25,14 +25,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 
-from week1.config import MODEL_PATH, ROOT_DIR, RETRAIN_DRIFT_THRESHOLD
-from week1.database import SessionLocal
+from week1.config import METRICS_PATH, MODEL_PATH, ROOT_DIR, RETRAIN_DRIFT_THRESHOLD
+from week1.database import SessionLocal, init_db
 from week1.delay_model import DelayModel
 from week1 import models
 from week1.features import CATEGORICAL_COLS, NUMERIC_COLS
 
 DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
 FEATURE_COLS = NUMERIC_COLS + CATEGORICAL_COLS
+
+
+def _json_safe(value):
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    if hasattr(value, "item"):
+        return value.item()
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value
+    return value
 
 
 def average_cost_drift(session) -> float | None:
@@ -46,14 +58,16 @@ def average_cost_drift(session) -> float | None:
 def outcomes_as_training_rows(session) -> pd.DataFrame:
     """Convert resolved decisions with feature snapshots into shipment-like rows.
 
-    Only rows that carry shipment_features_json AND actual_delay_days can
-    enter the training set — otherwise we would be inventing features.
+    Only rows that carry shipment_features_json AND actual_delay_days AND
+    resolved_at can enter the training set — otherwise we would invent
+    features or break temporal splits with null dates.
     """
     resolved = (
         session.query(models.Decision)
         .filter(models.Decision.actual_cost_usd.isnot(None))
         .filter(models.Decision.actual_delay_days.isnot(None))
         .filter(models.Decision.shipment_features_json.isnot(None))
+        .filter(models.Decision.resolved_at.isnot(None))
         .all()
     )
     rows = []
@@ -66,11 +80,9 @@ def outcomes_as_training_rows(session) -> pd.DataFrame:
             continue
         row = {col: features[col] for col in FEATURE_COLS}
         row["actual_delay_days"] = decision.actual_delay_days
-        # Outcomes are "most recent" observations for temporal splits.
-        if decision.resolved_at is not None:
-            row["shipment_date"] = decision.resolved_at.date().isoformat()
+        row["shipment_date"] = decision.resolved_at.date().isoformat()
         rows.append(row)
-    return pd.DataFrame(rows) if rows else pd.DataFrame(columns=FEATURE_COLS + ["actual_delay_days"])
+    return pd.DataFrame(rows) if rows else pd.DataFrame(columns=FEATURE_COLS + ["actual_delay_days", "shipment_date"])
 
 
 def build_training_frame(session) -> tuple[pd.DataFrame, dict]:
@@ -94,6 +106,7 @@ def build_training_frame(session) -> tuple[pd.DataFrame, dict]:
 
 
 def maybe_retrain(force: bool = False) -> dict:
+    init_db()
     session = SessionLocal()
     try:
         drift = average_cost_drift(session)
@@ -116,12 +129,21 @@ def maybe_retrain(force: bool = False) -> dict:
         MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
         model.save(MODEL_PATH)
 
+        clean = _json_safe(metrics)
+        for key, value in list(clean.items()):
+            if isinstance(value, (int, float)) and key.startswith("n_"):
+                clean[key] = int(value)
+        clean["top_features"] = model.feature_importance(top_n=10)
+        clean["training_frame"] = frame_meta
+        METRICS_PATH.write_text(json.dumps(clean, indent=2))
+
         return {
             "retrained": True,
             "reason": f"drift {drift:.1%} >= threshold {RETRAIN_DRIFT_THRESHOLD:.0%}",
             "drift": drift,
             "metrics": metrics,
             "training_frame": frame_meta,
+            "metrics_path": str(METRICS_PATH),
         }
     finally:
         session.close()

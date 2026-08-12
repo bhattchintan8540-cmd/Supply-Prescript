@@ -25,7 +25,7 @@ METRICS_PATH = Path(os.getenv("METRICS_PATH", ROOT_DIR / "data" / "metrics.json"
 # Business constraints the solver enforces by default. A real deployment
 # would probably pull these from a settings table so ops can tune them
 # without a redeploy, but env vars are good enough for the portfolio build.
-DEFAULT_BUDGET_USD = float(os.getenv("SP_DEFAULT_BUDGET", 20_000))
+DEFAULT_BUDGET_USD = float(os.getenv("SP_DEFAULT_BUDGET", 100_000))
 DEFAULT_MAX_DELAY_DAYS = int(os.getenv("SP_DEFAULT_MAX_DELAY_DAYS", 14))
 
 # Operational delay semantics for the optimizer.

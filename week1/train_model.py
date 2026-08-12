@@ -18,11 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 
-from week1.config import MODEL_PATH, ROOT_DIR
+from week1.config import METRICS_PATH, MODEL_PATH, ROOT_DIR
 from week1.delay_model import DelayModel
 
 DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
-METRICS_PATH = ROOT_DIR / "data" / "metrics.json"
 
 
 def _json_safe(value):
