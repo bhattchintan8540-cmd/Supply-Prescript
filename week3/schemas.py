@@ -39,6 +39,10 @@ class Option(BaseModel):
     cost_usd: float
     resulting_delay_days: float
     within_budget: bool
+    within_sla: bool | None = None
+    solver_status: str | None = None
+    allocation_units: dict[str, float] | None = None
+    delay_constraint_mode: str | None = None
 
 
 class PrescribeResponse(BaseModel):

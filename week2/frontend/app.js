@@ -152,18 +152,36 @@ function renderOptions(body) {
   optionsCards.innerHTML = "";
   body.options.forEach((opt) => {
     const card = document.createElement("div");
-    card.className = "option-card" + (opt.within_budget ? "" : " over-budget");
+    const overBudget = !opt.within_budget;
+    const overSla = opt.within_sla === false;
+    card.className = "option-card" + (overBudget || overSla ? " over-budget" : "");
+    const budgetTag = `<span class="tag ${opt.within_budget ? "ok" : "over"}">${
+      opt.within_budget ? "within budget" : "over budget"
+    }</span>`;
+    const slaTag =
+      opt.within_sla == null
+        ? ""
+        : `<span class="tag ${opt.within_sla ? "ok" : "over"}">${
+            opt.within_sla ? "within SLA" : "over SLA"
+          }</span>`;
+    const statusNote =
+      opt.solver_status && opt.solver_status !== "Optimal"
+        ? `<p class="metric muted">Solver: ${opt.solver_status}</p>`
+        : "";
     card.innerHTML = `
       <h3>${opt.label}</h3>
-      <span class="tag ${opt.within_budget ? "ok" : "over"}">
-        ${opt.within_budget ? "within budget" : "over budget"}
-      </span>
+      ${budgetTag}
+      ${slaTag}
       <p class="desc">${opt.description}</p>
-      <p class="metric"><strong>$${opt.cost_usd.toLocaleString()}</strong> total cost</p>
+      <p class="metric"><strong>$${Number(opt.cost_usd).toLocaleString()}</strong> total cost</p>
       <p class="metric">${opt.resulting_delay_days} day(s) resulting delay</p>
-      <button data-label="${opt.label}">Execute decision</button>
+      ${statusNote}
+      <button data-label="${opt.label}" ${overBudget && opt.cost_usd === 0 ? "disabled" : ""}>Execute decision</button>
     `;
-    card.querySelector("button").addEventListener("click", () => executeDecision(opt.label));
+    const btn = card.querySelector("button");
+    if (!btn.disabled) {
+      btn.addEventListener("click", () => executeDecision(opt.label));
+    }
     optionsCards.appendChild(card);
   });
   optionsSection.hidden = false;

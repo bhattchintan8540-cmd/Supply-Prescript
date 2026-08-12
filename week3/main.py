@@ -94,9 +94,23 @@ def get_model() -> DelayModel:
     return _model
 
 
+def clear_model_cache() -> None:
+    """Drop the in-memory model so the next request reloads from disk."""
+    global _model
+    _model = None
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "model_loaded": _model is not None}
+
+
+@app.post("/model/reload")
+def reload_model() -> dict:
+    """Force-reload the joblib artifact after an external retrain."""
+    clear_model_cache()
+    model = get_model()
+    return {"reloaded": True, "model_path": str(MODEL_PATH), "model_loaded": model is not None}
 
 
 @app.get("/model/info", response_model=schemas.ModelInfo)
@@ -178,6 +192,7 @@ def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get
         predicted_delay_days=days,
         budget_cap_usd=budget_cap,
         predicted_delay_probability=prob,
+        max_acceptable_delay_days=max_delay,
     )
     no_action = next(o for o in options if o["label"] == DELAY_LAUNCH_LABEL)
 
@@ -194,28 +209,48 @@ def prescribe(request: schemas.PrescribeRequest, model: DelayModel = Depends(get
         partial_fulfillment_useful=partial,
         min_on_time_fraction=min_on_time,
     )
-    allocation_desc = ", ".join(
-        f"{qty:.0f} units via {label.replace('_', ' ')}"
-        for label, qty in blend["allocation_units"].items()
-        if qty > 0
-    )
-    options.append(
-        {
-            "label": "Optimizer Recommended Split",
-            "description": (
-                f"MILP allocation ({blend['delay_constraint_mode']}): {allocation_desc}. "
-                f"Fixed fees ${blend['fixed_fees_usd']:,.0f} included in budget check."
-                + (
-                    " (over budget cap - shown anyway since the budget-constrained problem was infeasible)"
-                    if blend["budget_relaxed"]
-                    else ""
-                )
-            ),
-            "cost_usd": blend["total_cost_usd"],
-            "resulting_delay_days": blend["resulting_delay_days"],
-            "within_budget": blend["within_budget"],
-        }
-    )
+    if blend.get("infeasible"):
+        options.append(
+            {
+                "label": "Optimizer Recommended Split",
+                "description": blend.get("message")
+                or "No feasible MILP allocation under the current delay SLA.",
+                "cost_usd": 0.0,
+                "resulting_delay_days": 0.0,
+                "within_budget": False,
+                "within_sla": False,
+                "solver_status": blend["status"],
+                "allocation_units": blend.get("allocation_units"),
+                "delay_constraint_mode": blend.get("delay_constraint_mode"),
+            }
+        )
+    else:
+        allocation_desc = ", ".join(
+            f"{qty:.0f} units via {label.replace('_', ' ')}"
+            for label, qty in blend["allocation_units"].items()
+            if qty > 0
+        )
+        options.append(
+            {
+                "label": "Optimizer Recommended Split",
+                "description": (
+                    f"MILP allocation ({blend['delay_constraint_mode']}): {allocation_desc}. "
+                    f"Fixed fees ${blend['fixed_fees_usd']:,.0f} included in budget check."
+                    + (
+                        " (over budget cap - shown anyway since the budget-constrained problem was infeasible)"
+                        if blend["budget_relaxed"]
+                        else ""
+                    )
+                ),
+                "cost_usd": blend["total_cost_usd"],
+                "resulting_delay_days": blend["resulting_delay_days"],
+                "within_budget": blend["within_budget"],
+                "within_sla": blend["resulting_delay_days"] <= max_delay,
+                "solver_status": blend["status"],
+                "allocation_units": blend.get("allocation_units"),
+                "delay_constraint_mode": blend.get("delay_constraint_mode"),
+            }
+        )
 
     return schemas.PrescribeResponse(
         prediction=schemas.DelayPrediction(predicted_delay_days=days, predicted_delay_probability=prob),
