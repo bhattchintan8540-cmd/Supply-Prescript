@@ -1,7 +1,7 @@
 # Convenience targets for beginners — run from the project root.
 # Example:  make setup && make train && make api
 
-.PHONY: setup data explore train demo demo-ui api test retrain clean
+.PHONY: setup data explore train demo demo-ui api test retrain evaluate smoke clean
 
 setup:
 	python -m venv .venv
@@ -34,6 +34,13 @@ test:
 retrain:
 	python week4/retrain.py
 
+evaluate:
+	python week1/evaluate_xgboost.py
+
+smoke:
+	python week5/smoke_loop.py
+
 clean:
 	rm -f data/*.csv data/*.joblib data/*.db data/metrics.json
-	rm -f docs/figures/*.png
+	rm -rf data/ml_evaluation exports
+	# Keep committed presentation figures under docs/figures/.

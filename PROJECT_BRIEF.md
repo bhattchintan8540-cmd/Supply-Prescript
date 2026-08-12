@@ -41,6 +41,7 @@ already late. By then the options are expensive and messy.
 | 2 | Expected-cost formulas + PuLP MILP + dashboard UI | `week2/` |
 | 3 | FastAPI: prescribe, write-back, outcome, cost accuracy + ROI | `week3/` |
 | 4 | Drift check + outcome-aware retrain | `week4/` |
+| 5 | ML evaluation packaging + closed-loop smoke | `week5/` |
 
 Follow **[STEP_BY_STEP.md](STEP_BY_STEP.md)** if you are new — it walks
 through each commit and how to run the code yourself.

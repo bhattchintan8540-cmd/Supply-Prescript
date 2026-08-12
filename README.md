@@ -44,6 +44,7 @@ flowchart LR
 | 2 | `week2/` | Expected-cost formulas, PuLP MILP, HTML dashboard |
 | 3 | `week3/` | FastAPI: prescribe → write-back → outcome → cost accuracy + ROI |
 | 4 | `week4/` | Drift check + outcome-aware retrain |
+| 5 | `week5/` | Confusion-matrix evaluation + closed-loop smoke |
 
 ---
 
@@ -141,7 +142,17 @@ python week4/retrain.py --force    # always retrain
 ```
 
 Retrain fits on `shipments.csv` **plus** resolved outcomes that have a
-feature snapshot and actual delay label.
+feature snapshot and actual delay label. It also refreshes `metrics.json`.
+Reload the live API model afterward with `POST /model/reload`.
+
+---
+
+## Week 5 — evaluation + smoke
+
+```bash
+python week1/evaluate_xgboost.py   # confusion matrix + baseline verdict
+python week5/smoke_loop.py         # data → train → prescribe → outcome
+```
 
 ---
 
