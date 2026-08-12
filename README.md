@@ -72,8 +72,9 @@ Then open:
 
 Or use the Makefile: `make setup && make data && make explore && make train && make api`
 
-**VS Code / Cursor:** open the repo root, select the `.venv` interpreter, then use
-**Run and Debug** (API, train, demos, pytest) or **Tasks**. Guide: [VSCODE.md](VSCODE.md).
+**VS Code / Cursor (beginners):** open the repo root and follow the
+click-by-click guide **[VSCODE.md](VSCODE.md)**
+(extensions → venv → train → Run and Debug → dashboard).
 
 ---
 

@@ -14,15 +14,21 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## VS Code / Cursor (recommended)
+## VS Code / Cursor (recommended for beginners)
 
-1. **File → Open Folder** → `Supply-Prescript` (the repo root).
+Do **not** skip steps — first-time setup is written click-by-click here:
+
+👉 **[VSCODE.md](VSCODE.md)**
+
+Short version once that guide is done:
+
+1. **File → Open Folder** → `Supply-Prescript` (repo root, not `week3`).
 2. Install recommended extensions when prompted (Python, Jupyter).
-3. `Ctrl+Shift+P` → **Python: Select Interpreter** → `.venv\Scripts\python.exe`.
-4. **Run and Debug** → pick **API: FastAPI (uvicorn --reload)** (train the model first).
-5. Or **Terminal → Run Task…** → **Pipeline: data → train**.
-
-Full list of launch configs and tasks: [VSCODE.md](VSCODE.md).
+3. `Ctrl+Shift+P` → **Tasks: Run Task** → **Setup: create venv + install deps**.
+4. `Ctrl+Shift+P` → **Python: Select Interpreter** → `.venv\Scripts\python.exe`.
+5. `Ctrl+Shift+P` → **Tasks: Run Task** → **Pipeline: data → train**.
+6. Left sidebar **Run and Debug** → **API: FastAPI (uvicorn --reload)** → green ▶.
+7. Browser: http://127.0.0.1:8000/ui/ → click **Demo A / B / C**.
 
 ## Train the model
 
