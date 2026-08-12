@@ -33,3 +33,11 @@ These live under `data/` and are listed in `.gitignore`:
 - `data/dataset_split_summary.json` — counts and date windows
 
 The delay model (`week1/delay_model.py`) uses the same **temporal 60:20:20** strategy when `shipment_date` is present.
+
+**How each slice is used (non-negotiable):**
+
+| Split | Used for |
+|---|---|
+| Train (60%) | Fit XGBoost trees only |
+| Validation (20%) | Early stopping, isotonic probability calibration, decision-threshold tuning |
+| Test (20%) | Final metrics / reality-based check parameters only — never tuning |

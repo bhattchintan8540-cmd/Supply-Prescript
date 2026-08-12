@@ -17,6 +17,7 @@ the Python implementation. Read these before polishing slides further.
 | [10_design_decisions.md](10_design_decisions.md) | Why each math construct matches the business |
 | [11_dataset_analysis.md](11_dataset_analysis.md) | 60:20:20 train / validation / test split |
 | [12_xgboost_ml_process.md](12_xgboost_ml_process.md) | XGBoost evaluation + confusion matrix |
+| [13_reality_based_checks.md](13_reality_based_checks.md) | Reality-based check parameters and testing |
 
 ## Interview prompts these docs answer
 
@@ -25,3 +26,5 @@ the Python implementation. Read these before polishing slides further.
 3. Why isn't weighted-average delay always the right constraint?
 4. Why are fixed fees inside the MILP?
 5. What does retraining learn from newly captured outcomes?
+6. Which reality-based check parameters prove the model is decision-grade (not just “above baseline”)?
+7. How is the validation split actually used (early stop, calibration, threshold)?

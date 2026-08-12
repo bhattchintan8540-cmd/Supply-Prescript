@@ -11,7 +11,7 @@ Steps
 4. Fit XGBoost classifier (late?) + regressor (delay days)
 5. Score the test set; compare to supplier baselines
 6. Plot confusion matrix with TN / FP / FN / TP labels
-7. Write a short verdict: is the model doing right?
+7. Write a short verdict: do reality-based checks pass?
 
 Outputs are local only (gitignored under data/ml_evaluation/ and
 exports/). Copy the ready-made folder to:
@@ -68,7 +68,7 @@ def _ensure_data() -> pd.DataFrame:
 
 
 def _verdict(metrics: dict) -> dict:
-    """Ruthless check: lift must be real, calibrated, and operationally sane.
+    """Reality-based checks: lift must be real, calibrated, and operationally sane.
 
     Soft bars (AUC ≥ baseline, TP > 0, FPR ≤ 50%) were too weak for a system
     that multiplies P(delay) into money. Failures here mean: do not trust the
@@ -203,11 +203,13 @@ def _verdict(metrics: dict) -> dict:
         warnings.append(f"Weak segments (AUC<0.60): {weak}")
 
     return {
+        "reality_checks_passed": ok,
+        # Backward-compatible alias for older notebooks / exports.
         "model_doing_right": ok,
         "summary": (
-            "Model clears ruthless scientific gates vs baselines on the test hold-out."
+            "Model clears reality-based check parameters vs baselines on the test hold-out."
             if ok
-            else "Model FAILS one or more scientific gates — do not trust prescriptions yet."
+            else "Model FAILS one or more reality-based checks — do not trust prescriptions yet."
         ),
         "checks": checks,
         "warnings": warnings,
@@ -296,13 +298,13 @@ def write_process_markdown(path: Path, metrics: dict, verdict: dict) -> Path:
         "3. **Split** — Train : Data validation : Testing = **60 : 20 : 20** (temporal)",
         "4. **Models** — `XGBClassifier` (late > 3 days?) + `XGBRegressor` (delay days)",
         "5. **Evaluate** — test-set AUC / MAE vs supplier baselines; confusion matrix",
-        "6. **Decide** — is the model doing right?",
+        "6. **Decide** — do reality-based check parameters pass?",
         "",
-        "### Is the model doing right?",
+        "### Reality-based check parameters and testing",
         "",
         f"**Verdict:** {verdict['summary']}",
         "",
-        f"- Model doing right: **{verdict['model_doing_right']}**",
+        f"- Reality-based checks passed: **{verdict.get('reality_checks_passed', verdict.get('model_doing_right'))}**",
         f"- Validation strategy: `{metrics.get('validation_strategy')}`",
         f"- Train / Val / Test: {metrics.get('n_train')} / {metrics.get('n_val')} / {metrics.get('n_test')}",
         f"- Classifier AUC / PR-AUC: {metrics.get('auc')} / {metrics.get('pr_auc')} "
@@ -317,7 +319,7 @@ def write_process_markdown(path: Path, metrics: dict, verdict: dict) -> Path:
         f"- AUC lift bootstrap: {metrics.get('auc_lift_bootstrap')}",
         f"- MAE lift bootstrap: {metrics.get('mae_lift_bootstrap')}",
         "",
-        "### Ruthless gates",
+        "### Reality-based gates",
         "",
     ]
     for check in verdict.get("checks", []):

@@ -11,7 +11,7 @@ Not a scheduler or a Kafka consumer - just a function you'd point cron
      (those with a shipment feature snapshot and an actual delay label)
   4. refits DelayModel and writes the artifact + metrics.json
 
-Drift signals (ruthless mentor version)
+Drift signals (reality-based check parameters)
 --------------------------------------
 - Cost MAPE: |actual − predicted| / predicted  (business money error)
 - Delay MAE: |actual_delay − predicted_delay| (label error)

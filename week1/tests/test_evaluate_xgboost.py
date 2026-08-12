@@ -38,6 +38,7 @@ def test_verdict_passes_when_model_beats_baseline():
         "confusion_matrix": [[80, 10], [5, 40]],
     }
     verdict = ev._verdict(metrics)
+    assert verdict["reality_checks_passed"] is True
     assert verdict["model_doing_right"] is True
     assert verdict["confusion_counts"]["true_positive"] == 40
     assert verdict["confusion_counts"]["false_positive"] == 10
@@ -65,11 +66,12 @@ def test_verdict_fails_when_auc_below_baseline():
         "confusion_matrix": [[50, 40], [30, 20]],
     }
     verdict = ev._verdict(metrics)
+    assert verdict["reality_checks_passed"] is False
     assert verdict["model_doing_right"] is False
 
 
 def test_verdict_fails_on_soft_lift_even_if_barely_above_baseline():
-    """Ruthless gate: AUC = baseline is no longer a pass."""
+    """Reality-based gate: AUC = baseline is no longer a pass."""
     metrics = {
         "auc": 0.70,
         "baseline_auc": 0.70,
@@ -91,6 +93,7 @@ def test_verdict_fails_on_soft_lift_even_if_barely_above_baseline():
         "confusion_matrix": [[70, 20], [20, 40]],
     }
     verdict = ev._verdict(metrics)
+    assert verdict["reality_checks_passed"] is False
     assert verdict["model_doing_right"] is False
 
 

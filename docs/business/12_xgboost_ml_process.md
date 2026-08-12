@@ -5,7 +5,7 @@
 ## What this covers
 
 1. XGBoost ML process (features → 60:20:20 temporal split → fit → evaluate)
-2. Verdict: **is the model doing right?** (lift vs supplier baselines)
+2. Verdict: **do reality-based checks pass?** (lift vs supplier baselines + calibration)
 3. Confusion matrix plot
 4. True Positive / False Positive annotated matrix (TN / FP / FN / TP)
 

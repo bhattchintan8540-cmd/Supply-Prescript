@@ -30,4 +30,8 @@
   residual secondary risk; air residual delay is treated as certain.
 - If the budget-constrained MILP is infeasible, solve without budget and
   flag `budget_relaxed` / `within_budget=false` — do not hide overages.
-- Retrain when average cost drift ≥ 15% (configurable).
+- Retrain when **any** of these drift signals fire (configurable):
+  - average cost MAPE ≥ 15%
+  - hard late/on-time miss rate ≥ 40%
+  - outcome Brier ≥ 0.30
+  - delay MAE ≥ 3 days

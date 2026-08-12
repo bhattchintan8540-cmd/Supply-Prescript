@@ -15,7 +15,8 @@ activation fees.
 | Intervention ROI | `(no_action_cost − actual_cost) / no_action_cost` | `/decisions/roi` |
 | Cost forecast accuracy | Mean absolute % error of predicted vs actual chosen-option cost | `/decisions/cost-accuracy` |
 | Budget adherence | Share of resolved decisions with actual cost ≤ budget | `/decisions/cost-accuracy` |
-| Model lift vs baseline | XGBoost MAE/AUC versus supplier-mean / late-rate baselines under temporal split | `/model/info` |
+| Model lift vs baseline | XGBoost MAE/AUC versus supplier-mean / late-rate baselines under temporal split, with bootstrap lift CIs + calibration (Brier/ECE) | `/model/info`, `data/metrics.json` |
+| Reality-based check parameters | Pass/fail testing on recall, FPR, calibration, and significant lift (not “TP > 0”) | `week1/evaluate_xgboost.py` verdict |
 
 ## Non-goals (prototype scope)
 

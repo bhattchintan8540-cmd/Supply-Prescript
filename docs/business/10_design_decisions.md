@@ -38,3 +38,20 @@ the fact. Channel binaries put `fee_k * y_k` in the objective and budget.
 Drift on resolved decisions is the trigger. Learning requires labels
 *and* features. Feature JSON on Decision lets eligible outcomes join the
 training frame; older rows without snapshots only affect the trigger.
+
+## 6. Why validation is not optional labeling
+
+Train fits trees. Validation chooses early-stopping iteration, isotonic
+calibration of `P(delay)`, and the operating threshold. Test scores once.
+If validation is unused, a 60:20:20 split is documentation only, not science.
+
+## 7. Why bootstrap lift CIs matter
+
+Beating a supplier-mean baseline by 0.05 AUC on one split can be noise.
+Bootstrap 95% CIs on AUC/MAE lift answer: is the improvement stable
+enough to put money behind expected-cost prescriptions?
+
+## 8. Why multi-signal drift beats cost MAPE alone
+
+Cost forecast error can look fine while late/on-time probabilities rot.
+Retrain also watches hard-miss rate, outcome Brier, and delay MAE.

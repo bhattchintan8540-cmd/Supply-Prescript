@@ -84,10 +84,12 @@ click-by-click guide **[VSCODE.md](VSCODE.md)**
 - **ROI needs a counterfactual.** `/decisions/roi` compares actual cost to Delay Launch (no action). Cost forecast error lives at `/decisions/cost-accuracy`.
 - **Delay constraint matches operations.** Default = makespan (last unit). Weighted average only if partial fulfillment is useful.
 - **Fixed fees are inside the MILP** via channel-activation binaries.
-- **Metrics are on synthetic data** with programmed relationships, validated temporally against baselines. They show recovery of the synthetic environment — not real-world AUC claims.
+- **Metrics are on synthetic data** with programmed relationships, validated temporally against baselines, with bootstrap lift CIs and calibrated probabilities. They show recovery of the synthetic environment — not real-world AUC claims.
+- **Validation is used:** early stopping, isotonic calibration, threshold tuning. Test is final scoring only.
 - **Secondary supplier is scenario-based**, not a qualified supplier-selection engine.
 
-Details: [docs/business/](docs/business/).
+Details: [docs/business/](docs/business/) — especially
+[13_reality_based_checks.md](docs/business/13_reality_based_checks.md).
 
 ---
 

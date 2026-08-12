@@ -10,7 +10,9 @@
 | FR-6 Outcome recording | same lifecycle test | |
 | FR-7 Separate ROI vs cost accuracy | lifecycle test hits both endpoints | |
 | FR-8 Outcomes → training | `week4/tests/test_retrain.py::test_outcomes_as_training_rows_uses_feature_snapshots` | |
-| FR-9 Temporal + baselines | `week1/tests/test_delay_model.py::test_fit_uses_temporal_split_when_dates_present`, `test_fit_reports_baseline_and_classifier_diagnostics` | |
+| FR-9 Temporal + baselines | `week1/tests/test_delay_model.py::test_fit_uses_temporal_split_when_dates_present`, `test_fit_reports_baseline_and_classifier_diagnostics` | Val used for early stop / calibration / threshold |
+| FR-10 Reality-based check parameters | `week1/tests/test_evaluate_xgboost.py` verdict tests | Bootstrap lift, recall/FPR/Brier/ECE gates |
+| FR-11 Multi-signal drift | `week4/tests/test_retrain.py::test_should_retrain_triggers_on_hard_miss_even_if_cost_ok` | Cost MAPE alone is insufficient |
 
 ## Analytical validity vs software correctness
 
