@@ -47,9 +47,10 @@ python week1/train_model.py
 You should see:
 
 1. ~4,000 rows written to `data/shipments.csv`
-2. Three PNGs under `docs/figures/`
-3. Training metrics printed (MAE ~1.9 days, AUC ~0.79) and
-   `data/delay_model.joblib` + `data/metrics.json` saved
+2. Four PNGs under `docs/figures/` (including Delta Cove bad quarter)
+3. Training metrics printed (MAE ~1.8–2.0 days, AUC ~0.74 on seeded
+   synthetic temporal holdout — always compare to the supplier baseline)
+   and `data/delay_model.joblib` + `data/metrics.json` saved
 
 Optional: open `notebooks/01_exploratory_analysis.ipynb` in VS Code / Jupyter.
 
@@ -100,7 +101,21 @@ Retrain fits on shipments plus eligible outcomes that stored a feature snapshot.
 
 ---
 
-## Step 5 — Tests
+## Step 5 — Week 5: evaluation + packaging
+
+Confusion-matrix evaluation and end-to-end smoke check:
+
+```bash
+python week1/evaluate_xgboost.py
+python week5/smoke_loop.py
+python -m pytest -q
+```
+
+See `week5/README.md` for the evaluation deliverables folder.
+
+---
+
+## Step 6 — Tests
 
 From the project root:
 

@@ -43,7 +43,7 @@ Use with speaker notes in `SPEAKER_NOTES.md` and business framing in `../busines
 
 **Slide 10 — Model**  
 - Shared feature builder  
-- Temporal 70/15/15 validation  
+- Temporal 60/20/20 validation  
 - Compare MAE/AUC to supplier baselines  
 - Metrics recover synthetic relationships — not field claims  
 

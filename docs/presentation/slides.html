@@ -363,11 +363,11 @@
         </ul>
       </div>
       <div class="card">
-        <h3>PuLP linear program</h3>
+        <h3>PuLP mixed-integer program</h3>
         <ul>
-          <li>Decision vars: units per channel</li>
-          <li>Constraints: fill order, budget, max delay</li>
-          <li>Objective: minimize cost</li>
+          <li>Decision vars: units + channel binaries</li>
+          <li>Constraints: fill order, budget + fees, makespan delay</li>
+          <li>Objective: minimize <em>expected</em> cost</li>
         </ul>
       </div>
     </div>
@@ -384,7 +384,8 @@
         <tr><td><code>POST /prescribe</code></td><td>Prediction + 4 options</td></tr>
         <tr><td><code>POST /decisions</code></td><td>Write-back: save the human choice</td></tr>
         <tr><td><code>PATCH /decisions/{id}/outcome</code></td><td>Log actual cost & delay</td></tr>
-        <tr><td><code>GET /decisions/roi</code></td><td>Predicted vs actual, on-budget rate</td></tr>
+        <tr><td><code>GET /decisions/roi</code></td><td>True ROI vs Delay Launch (no action)</td></tr>
+        <tr><td><code>GET /decisions/cost-accuracy</code></td><td>Predicted vs actual cost, on-budget rate</td></tr>
       </tbody>
     </table>
     <p style="margin-top:1rem">Dashboard: <strong>http://127.0.0.1:8000/ui/</strong></p>
@@ -406,7 +407,7 @@
         <p>Point cron / GitHub Action at it weekly.</p>
       </div>
     </div>
-    <p class="muted" style="margin-top:1rem">Honest scope: demo re-fits on shipment history; production would fold resolved decisions into training via a shipment FK.</p>
+    <p class="muted" style="margin-top:1rem">Retrain fits on shipments.csv <strong>plus</strong> eligible resolved outcomes that stored a feature snapshot and delay label.</p>
   </section>
 
   <!-- 14 -->
@@ -435,7 +436,7 @@
     <div class="grid-3">
       <div class="card"><div class="metric">Temporal</div><div class="metric-label">Holdout vs baselines</div></div>
       <div class="card"><div class="metric">P×$</div><div class="metric-label">Expected holding in MILP</div></div>
-      <div class="card"><div class="metric">15</div><div class="metric-label">automated tests passing</div></div>
+      <div class="card"><div class="metric">25+</div><div class="metric-label">automated tests passing</div></div>
     </div>
     <ul>
       <li>End-to-end loop: prescribe → decide → outcome → ROI vs no-action</li>
@@ -453,7 +454,7 @@
         <li>EDA & storytelling with charts</li>
         <li>Feature engineering for train + live inference</li>
         <li>Supervised ML (classification + regression)</li>
-        <li>Prescriptive analytics / linear programming</li>
+        <li>Prescriptive analytics / mixed-integer programming</li>
       </ul>
       <ul>
         <li>API design & write-back patterns</li>
