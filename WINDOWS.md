@@ -14,6 +14,16 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+## VS Code / Cursor (recommended)
+
+1. **File → Open Folder** → `Supply-Prescript` (the repo root).
+2. Install recommended extensions when prompted (Python, Jupyter).
+3. `Ctrl+Shift+P` → **Python: Select Interpreter** → `.venv\Scripts\python.exe`.
+4. **Run and Debug** → pick **API: FastAPI (uvicorn --reload)** (train the model first).
+5. Or **Terminal → Run Task…** → **Pipeline: data → train**.
+
+Full list of launch configs and tasks: [VSCODE.md](VSCODE.md).
+
 ## Train the model
 
 ```powershell

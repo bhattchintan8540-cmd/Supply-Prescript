@@ -1,0 +1,118 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup: create venv + install deps",
+      "type": "shell",
+      "command": "python -m venv .venv && .venv/bin/pip install -r requirements.txt",
+      "windows": {
+        "command": "python -m venv .venv; .\\.venv\\Scripts\\pip install -r requirements.txt"
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Week1: generate mock data",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} week1/generate_mock_data.py",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Week1: explore data (EDA charts)",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} week1/explore_data.py",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Week1: train delay model",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} week1/train_model.py",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Week1: evaluate XGBoost (confusion matrix)",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} week1/evaluate_xgboost.py",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Week4: retrain if drift",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} week4/retrain.py",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Week5: smoke closed loop",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} week5/smoke_loop.py",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Tests: pytest",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} -m pytest -q",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        }
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Pipeline: data → train",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Week1: generate mock data",
+        "Week1: train delay model"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

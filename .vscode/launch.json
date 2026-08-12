@@ -1,0 +1,163 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API: FastAPI (uvicorn --reload)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "week3.main:app",
+        "--reload",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "jinja": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week1: generate mock data",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week1/generate_mock_data.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week1: explore data",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week1/explore_data.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week1: train model",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week1/train_model.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week1: demo model (CLI)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week1/demo_model.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week1: evaluate XGBoost",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week1/evaluate_xgboost.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week2: demo prescribe",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week2/demo_prescribe.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week4: retrain",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week4/retrain.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week4: retrain --force",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week4/retrain.py",
+      "args": ["--force"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Week5: smoke closed loop",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/week5/smoke_loop.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Pytest: all tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-q"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Pytest: current file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-q", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Demo: train then API",
+      "configurations": [
+        "Week1: train model",
+        "API: FastAPI (uvicorn --reload)"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "order": 1,
+        "group": "demo"
+      }
+    }
+  ]
+}

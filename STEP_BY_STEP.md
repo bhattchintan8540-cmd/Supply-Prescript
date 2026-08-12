@@ -15,6 +15,9 @@ You only need Python 3.10+. Postgres is optional (sqlite is the default).
 
 Shortcut after setup: `make data`, `make explore`, `make train`, `make api`, `make test`.
 
+**Prefer VS Code?** Open the repo root, select `.venv`, then use Run and Debug /
+Tasks — see [VSCODE.md](VSCODE.md).
+
 ---
 
 ## Step 0 — Scaffolding

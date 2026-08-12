@@ -16,6 +16,7 @@ true ROI, operational delay constraints, outcome-aware retraining).
 | Problem statement | [PROJECT_BRIEF.md](PROJECT_BRIEF.md) |
 | **Business analysis** | [docs/business/](docs/business/) |
 | Beginner walkthrough | [STEP_BY_STEP.md](STEP_BY_STEP.md) |
+| **VS Code / Cursor run guide** | [VSCODE.md](VSCODE.md) |
 | Windows setup | [WINDOWS.md](WINDOWS.md) |
 | **Presentation pack** (slides, demo script, Q&A) | [docs/presentation/](docs/presentation/) |
 | EDA notebook | [notebooks/01_exploratory_analysis.ipynb](notebooks/01_exploratory_analysis.ipynb) |
@@ -70,6 +71,9 @@ Then open:
 - Interactive API docs: http://127.0.0.1:8000/docs
 
 Or use the Makefile: `make setup && make data && make explore && make train && make api`
+
+**VS Code / Cursor:** open the repo root, select the `.venv` interpreter, then use
+**Run and Debug** (API, train, demos, pytest) or **Tasks**. Guide: [VSCODE.md](VSCODE.md).
 
 ---
 
