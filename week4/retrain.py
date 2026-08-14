@@ -25,6 +25,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 
+from urllib.error import URLError
+from urllib.request import Request, urlopen
+
 from week1.config import METRICS_PATH, MODEL_PATH, ROOT_DIR, RETRAIN_DRIFT_THRESHOLD
 from week1.database import SessionLocal, init_db
 from week1.delay_model import DelayModel
@@ -33,6 +36,17 @@ from week1.features import CATEGORICAL_COLS, NUMERIC_COLS
 
 DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
 FEATURE_COLS = NUMERIC_COLS + CATEGORICAL_COLS
+API_RELOAD_URL = "http://127.0.0.1:8000/model/reload"
+
+
+def _reload_running_api() -> bool:
+    """Best-effort: drop the in-memory model if uvicorn is already up."""
+    try:
+        req = Request(API_RELOAD_URL, method="POST", data=b"")
+        with urlopen(req, timeout=1.5) as resp:
+            return 200 <= getattr(resp, "status", 200) < 300
+    except (URLError, TimeoutError, OSError):
+        return False
 
 
 def _json_safe(value):
@@ -142,6 +156,7 @@ def maybe_retrain(force: bool = False) -> dict:
         clean["top_features"] = model.feature_importance(top_n=10)
         clean["training_frame"] = frame_meta
         METRICS_PATH.write_text(json.dumps(clean, indent=2))
+        api_reloaded = _reload_running_api()
 
         return {
             "retrained": True,
@@ -150,6 +165,7 @@ def maybe_retrain(force: bool = False) -> dict:
             "metrics": metrics,
             "training_frame": frame_meta,
             "metrics_path": str(METRICS_PATH),
+            "api_reloaded": api_reloaded,
         }
     finally:
         session.close()

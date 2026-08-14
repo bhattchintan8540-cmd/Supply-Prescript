@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from week1 import models
 from week1.database import SessionLocal
-from week4.retrain import average_cost_drift, maybe_retrain, outcomes_as_training_rows
+from week4.retrain import average_cost_drift, maybe_retrain, outcomes_as_training_rows, _reload_running_api
 
 
 def _clear_decisions() -> None:
@@ -154,3 +154,7 @@ def test_outcomes_without_any_timestamp_are_skipped():
         assert len(rows) == 0
     finally:
         session.close()
+
+
+def test_reload_running_api_is_false_when_nothing_listens():
+    assert _reload_running_api() is False

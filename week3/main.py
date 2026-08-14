@@ -138,6 +138,7 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
         "f1": None,
         "brier_score": None,
         "data_is_synthetic": True,
+        "segment_auc": None,
         "top_features": [],
     }
     if METRICS_PATH.exists():
@@ -158,6 +159,7 @@ def model_info(model: DelayModel = Depends(get_model)) -> schemas.ModelInfo:
             "f1",
             "brier_score",
             "data_is_synthetic",
+            "segment_auc",
         ):
             if key in saved:
                 payload[key] = saved[key]
