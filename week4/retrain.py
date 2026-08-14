@@ -25,6 +25,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 
+from urllib.error import URLError
+from urllib.request import Request, urlopen
+
 from week1.config import METRICS_PATH, MODEL_PATH, ROOT_DIR, RETRAIN_DRIFT_THRESHOLD
 from week1.database import SessionLocal, init_db
 from week1.delay_model import DelayModel
@@ -33,6 +36,17 @@ from week1.features import CATEGORICAL_COLS, NUMERIC_COLS
 
 DATA_PATH = ROOT_DIR / "data" / "shipments.csv"
 FEATURE_COLS = NUMERIC_COLS + CATEGORICAL_COLS
+API_RELOAD_URL = "http://127.0.0.1:8000/model/reload"
+
+
+def _reload_running_api() -> bool:
+    """Best-effort: drop the in-memory model if uvicorn is already up."""
+    try:
+        req = Request(API_RELOAD_URL, method="POST", data=b"")
+        with urlopen(req, timeout=1.5) as resp:
+            return 200 <= getattr(resp, "status", 200) < 300
+    except (URLError, TimeoutError, OSError):
+        return False
 
 
 def _json_safe(value):
@@ -59,15 +73,18 @@ def outcomes_as_training_rows(session) -> pd.DataFrame:
     """Convert resolved decisions with feature snapshots into shipment-like rows.
 
     Only rows that carry shipment_features_json AND actual_delay_days AND
-    resolved_at can enter the training set — otherwise we would invent
-    features or break temporal splits with null dates.
+    a usable timestamp can enter the training set — otherwise we would
+    invent features or break temporal splits with null dates.
+
+    Prefer `created_at` (decision time) as shipment_date, not resolved_at.
+    Resolution time would place the label in the future relative to when
+    the shipment was actually decided, which leaks hold-out order.
     """
     resolved = (
         session.query(models.Decision)
         .filter(models.Decision.actual_cost_usd.isnot(None))
         .filter(models.Decision.actual_delay_days.isnot(None))
         .filter(models.Decision.shipment_features_json.isnot(None))
-        .filter(models.Decision.resolved_at.isnot(None))
         .all()
     )
     rows = []
@@ -79,8 +96,11 @@ def outcomes_as_training_rows(session) -> pd.DataFrame:
         if not all(col in features for col in FEATURE_COLS):
             continue
         row = {col: features[col] for col in FEATURE_COLS}
+        stamp = decision.created_at or decision.resolved_at
+        if stamp is None:
+            continue
         row["actual_delay_days"] = decision.actual_delay_days
-        row["shipment_date"] = decision.resolved_at.date().isoformat()
+        row["shipment_date"] = stamp.date().isoformat()
         rows.append(row)
     return pd.DataFrame(rows) if rows else pd.DataFrame(columns=FEATURE_COLS + ["actual_delay_days", "shipment_date"])
 
@@ -136,6 +156,7 @@ def maybe_retrain(force: bool = False) -> dict:
         clean["top_features"] = model.feature_importance(top_n=10)
         clean["training_frame"] = frame_meta
         METRICS_PATH.write_text(json.dumps(clean, indent=2))
+        api_reloaded = _reload_running_api()
 
         return {
             "retrained": True,
@@ -144,6 +165,7 @@ def maybe_retrain(force: bool = False) -> dict:
             "metrics": metrics,
             "training_frame": frame_meta,
             "metrics_path": str(METRICS_PATH),
+            "api_reloaded": api_reloaded,
         }
     finally:
         session.close()
