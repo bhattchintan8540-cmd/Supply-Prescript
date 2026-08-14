@@ -60,6 +60,7 @@ def test_outcomes_as_training_rows_uses_feature_snapshots():
             budget_cap_usd=100000,
             actual_cost_usd=91000,
             actual_delay_days=1.5,
+            created_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
             resolved_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
         )
         session.add(decision)
@@ -74,7 +75,45 @@ def test_outcomes_as_training_rows_uses_feature_snapshots():
         session.close()
 
 
-def test_outcomes_without_resolved_at_are_skipped():
+def test_outcomes_prefer_created_at_over_resolved_at():
+    _clear_decisions()
+    session = SessionLocal()
+    try:
+        features = {
+            "sku": "MICROCHIP-A2",
+            "supplier": "NovaChip Manufacturing",
+            "origin_region": "Asia Pacific",
+            "distance_km": 8800,
+            "historical_avg_lead_time_days": 16,
+            "order_quantity": 6000,
+            "unit_cost_usd": 14.2,
+            "is_peak_season": False,
+        }
+        decision = models.Decision(
+            shipment_sku="MICROCHIP-A2",
+            predicted_delay_days=4.0,
+            predicted_delay_probability=0.6,
+            options_json="[]",
+            shipment_features_json=json.dumps(features),
+            chosen_option_label="Air Freight",
+            predicted_cost_usd=90000,
+            no_action_cost_usd=95000,
+            budget_cap_usd=100000,
+            actual_cost_usd=91000,
+            actual_delay_days=1.5,
+            created_at=datetime(2026, 1, 15, tzinfo=timezone.utc),
+            resolved_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        )
+        session.add(decision)
+        session.commit()
+        rows = outcomes_as_training_rows(session)
+        assert len(rows) == 1
+        assert rows.iloc[0]["shipment_date"] == "2026-01-15"
+    finally:
+        session.close()
+
+
+def test_outcomes_without_any_timestamp_are_skipped():
     _clear_decisions()
     session = SessionLocal()
     try:
@@ -100,9 +139,16 @@ def test_outcomes_without_resolved_at_are_skipped():
             budget_cap_usd=100000,
             actual_cost_usd=41000,
             actual_delay_days=2.0,
+            created_at=None,
             resolved_at=None,
         )
         session.add(decision)
+        session.commit()
+        # SQLAlchemy Column default fills created_at on INSERT; clear both
+        # timestamps to cover the skip path for undated rows.
+        session.query(models.Decision).update(
+            {models.Decision.created_at: None, models.Decision.resolved_at: None}
+        )
         session.commit()
         rows = outcomes_as_training_rows(session)
         assert len(rows) == 0

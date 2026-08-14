@@ -147,7 +147,10 @@ class ModelInfo(BaseModel):
     auc: float | None = None
     n_train: int | None = None
     n_test: int | None = None
+    n_val: int | None = None
     validation_strategy: str | None = None
+    validation_used_for_tuning: bool | None = None
+    decision_threshold: float | None = None
     baseline_mae_days: float | None = None
     baseline_auc: float | None = None
     precision: float | None = None

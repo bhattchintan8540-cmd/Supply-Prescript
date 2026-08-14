@@ -59,15 +59,18 @@ def outcomes_as_training_rows(session) -> pd.DataFrame:
     """Convert resolved decisions with feature snapshots into shipment-like rows.
 
     Only rows that carry shipment_features_json AND actual_delay_days AND
-    resolved_at can enter the training set — otherwise we would invent
-    features or break temporal splits with null dates.
+    a usable timestamp can enter the training set — otherwise we would
+    invent features or break temporal splits with null dates.
+
+    Prefer `created_at` (decision time) as shipment_date, not resolved_at.
+    Resolution time would place the label in the future relative to when
+    the shipment was actually decided, which leaks hold-out order.
     """
     resolved = (
         session.query(models.Decision)
         .filter(models.Decision.actual_cost_usd.isnot(None))
         .filter(models.Decision.actual_delay_days.isnot(None))
         .filter(models.Decision.shipment_features_json.isnot(None))
-        .filter(models.Decision.resolved_at.isnot(None))
         .all()
     )
     rows = []
@@ -79,8 +82,11 @@ def outcomes_as_training_rows(session) -> pd.DataFrame:
         if not all(col in features for col in FEATURE_COLS):
             continue
         row = {col: features[col] for col in FEATURE_COLS}
+        stamp = decision.created_at or decision.resolved_at
+        if stamp is None:
+            continue
         row["actual_delay_days"] = decision.actual_delay_days
-        row["shipment_date"] = decision.resolved_at.date().isoformat()
+        row["shipment_date"] = stamp.date().isoformat()
         rows.append(row)
     return pd.DataFrame(rows) if rows else pd.DataFrame(columns=FEATURE_COLS + ["actual_delay_days", "shipment_date"])
 
