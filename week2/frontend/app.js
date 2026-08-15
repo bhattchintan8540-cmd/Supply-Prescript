@@ -1,8 +1,21 @@
-// Same-origin when the dashboard is served by FastAPI at `/`.
-// Falls back to localhost:8000 when the HTML is opened as a local file.
-const API_BASE = window.SP_API_BASE || (window.location.protocol.startsWith("http")
-  ? ""
-  : "http://localhost:8000");
+// Resolve the FastAPI origin so the dashboard works in a real browser:
+// same-origin at /ui/ (uvicorn), file://, VS Code Live Server, Cursor preview.
+// Override with window.SP_API_BASE if the API is not on 127.0.0.1:8000.
+const DEFAULT_API_ORIGIN = "http://127.0.0.1:8000";
+
+function resolveApiBase() {
+  if (typeof window.SP_API_BASE === "string") return window.SP_API_BASE;
+  const loc = window.location;
+  if (!String(loc.protocol).startsWith("http")) return DEFAULT_API_ORIGIN;
+  const path = loc.pathname || "";
+  const onFastApiDashboard = path === "/" || path === "/ui" || path.startsWith("/ui/");
+  const port = loc.port || (loc.protocol === "https:" ? "443" : "80");
+  const onFastApiPort = port === "8000";
+  if (onFastApiDashboard || onFastApiPort) return "";
+  return DEFAULT_API_ORIGIN;
+}
+
+const API_BASE = resolveApiBase();
 
 const form = document.getElementById("shipment-form");
 const predictionSection = document.getElementById("prediction-section");
