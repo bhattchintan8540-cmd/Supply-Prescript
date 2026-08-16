@@ -42,6 +42,8 @@ already late. By then the options are expensive and messy.
 | 3 | FastAPI: prescribe, write-back, outcome, cost accuracy + ROI | `week3/` |
 | 4 | Drift check + outcome-aware retrain | `week4/` |
 | 5 | ML evaluation packaging + closed-loop smoke | `week5/` |
+| 6 | Phase 2 midpoint: budget × delay grid on the existing solver | `week6/` |
+| 7 | Phase 2 midpoint: demo-point recommendation, then stop | `week7/` |
 
 Follow **[STEP_BY_STEP.md](STEP_BY_STEP.md)** if you are new — it walks
 through each commit and how to run the code yourself.

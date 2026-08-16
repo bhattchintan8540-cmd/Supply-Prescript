@@ -119,7 +119,28 @@ See `week5/README.md` for the evaluation deliverables folder.
 
 ---
 
-## Step 6 — Tests
+## Step 6 — Week 6: Phase 2 midpoint sweep
+
+```bash
+python week6/phase2_midpoint.py
+```
+
+Nine rows, then `WEEK6 PHASE2 MIDPOINT OK`.
+
+---
+
+## Step 7 — Week 7: Phase 2 midpoint recommendation
+
+```bash
+python week7/recommend.py
+```
+
+The cheapest feasible pure option at the demo budget and delay ceiling,
+then `WEEK7 PHASE2 MIDPOINT OK`.
+
+---
+
+## Step 8 — Tests
 
 From the project root:
 
