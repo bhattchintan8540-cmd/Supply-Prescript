@@ -42,6 +42,22 @@ def test_verdict_fails_when_auc_below_baseline():
     assert verdict["model_doing_right"] is False
 
 
+def test_verdict_fails_when_fit_quality_is_overfit():
+    metrics = {
+        "auc": 0.85,
+        "baseline_auc": 0.70,
+        "mae_days": 1.5,
+        "baseline_mae_days": 2.0,
+        "precision": 0.8,
+        "recall": 0.7,
+        "f1": 0.75,
+        "confusion_matrix": [[80, 10], [5, 40]],
+        "fit_quality": "overfit",
+    }
+    verdict = ev._verdict(metrics)
+    assert verdict["model_doing_right"] is False
+
+
 def test_plot_confusion_matrix_writes_png(tmp_path):
     cm = np.array([[90, 8], [12, 40]], dtype=int)
     out = tmp_path / "cm.png"

@@ -96,11 +96,15 @@ def outcomes_as_training_rows(session) -> pd.DataFrame:
         if not all(col in features for col in FEATURE_COLS):
             continue
         row = {col: features[col] for col in FEATURE_COLS}
+        feature_date = features.get("shipment_date")
         stamp = decision.created_at or decision.resolved_at
-        if stamp is None:
+        if feature_date:
+            row["shipment_date"] = str(feature_date)[:10]
+        elif stamp is not None:
+            row["shipment_date"] = stamp.date().isoformat()
+        else:
             continue
         row["actual_delay_days"] = decision.actual_delay_days
-        row["shipment_date"] = stamp.date().isoformat()
         rows.append(row)
     return pd.DataFrame(rows) if rows else pd.DataFrame(columns=FEATURE_COLS + ["actual_delay_days", "shipment_date"])
 
