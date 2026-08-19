@@ -15,5 +15,6 @@ python week6/phase2_midpoint.py
 python -m pytest week6 -q
 ```
 
-You should see nine rows and the line `WEEK6 PHASE2 MIDPOINT OK`.
-Week 7 reads this same grid and names the demo-point recommendation.
+You should see nine rows, a write to `data/phase2_grid.csv`, and the line
+`WEEK6 PHASE2 MIDPOINT OK`. Week 7 reads this same grid and names the
+demo-point recommendation.
