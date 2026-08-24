@@ -9,6 +9,7 @@ pick that same option. Does not write a decision or call retrain.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -20,6 +21,9 @@ from week6.phase2_midpoint import (
     SAMPLE,
     sweep_phase2,
 )
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+RECOMMENDATION_JSON_PATH = ROOT_DIR / "data" / "phase2_recommendation.json"
 
 
 def recommend_midpoint(rows: list[dict] | None = None) -> dict:
@@ -90,9 +94,37 @@ def format_recommendation(result: dict) -> str:
     return header
 
 
+def _json_ready(result: dict) -> dict:
+    """Drop nested option dicts so the JSON stays a compact summary."""
+    payload = {key: value for key, value in result.items() if key != "grid"}
+    payload["grid"] = [
+        {
+            "budget_cap_usd": row["budget_cap_usd"],
+            "max_acceptable_delay_days": row["max_acceptable_delay_days"],
+            "winner_label": row["winner_label"],
+            "winner_cost_usd": row["winner_cost_usd"],
+            "milp_feasible": row["milp_feasible"],
+        }
+        for row in result.get("grid") or []
+    ]
+    return payload
+
+
+def persist_recommendation(
+    result: dict,
+    path: Path = RECOMMENDATION_JSON_PATH,
+) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(_json_ready(result), indent=2), encoding="utf-8")
+    return path
+
+
 def main() -> int:
-    print(format_recommendation(recommend_midpoint()))
+    result = recommend_midpoint()
+    json_path = persist_recommendation(result)
+    print(format_recommendation(result))
     print()
+    print(f"Wrote {json_path}")
     print("WEEK7 PHASE2 MIDPOINT OK")
     return 0
 

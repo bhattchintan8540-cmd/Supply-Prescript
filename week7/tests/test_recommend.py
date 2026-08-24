@@ -1,7 +1,15 @@
 """Week 7 checks the midpoint recommendation against the week 6 grid."""
 
+import json
+from pathlib import Path
+
 from week6.phase2_midpoint import DEMO_BUDGET_USD, DEMO_MAX_DELAY_DAYS, sweep_phase2
-from week7.recommend import format_grid_table, format_recommendation, recommend_midpoint
+from week7.recommend import (
+    format_grid_table,
+    format_recommendation,
+    persist_recommendation,
+    recommend_midpoint,
+)
 
 
 def test_recommendation_matches_demo_cell():
@@ -27,3 +35,12 @@ def test_recommendation_print_includes_grid_table():
     assert "pure winner" in table
     assert "* = demo operating point" in table
     assert table in text
+
+
+def test_persist_recommendation_writes_json(tmp_path: Path):
+    out = tmp_path / "phase2_recommendation.json"
+    result = recommend_midpoint()
+    persist_recommendation(result, path=out)
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert payload["winner_label"] == result["winner_label"]
+    assert len(payload["grid"]) == result["grid_cells"]
