@@ -159,3 +159,19 @@ def test_root_and_ui_without_slash_open_in_browser(client):
     page = client.get("/", follow_redirects=True)
     assert page.status_code == 200
     assert "SupplyPrescript" in page.text
+
+
+def test_phase2_recommend_endpoint(client):
+    resp = client.get("/phase2/recommend")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["sku"]
+    assert body["grid_cells"] == 9
+    assert len(body["grid"]) == 9
+    assert body["winner_label"] in {
+        "Air Freight",
+        "Secondary Supplier",
+        "Delay Launch",
+        None,
+    }
+    assert 1 <= body["same_winner_cells"] <= body["grid_cells"]
