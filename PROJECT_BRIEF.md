@@ -44,6 +44,7 @@ already late. By then the options are expensive and messy.
 | 5 | ML evaluation packaging + closed-loop smoke | `week5/` |
 | 6 | Phase 2 midpoint: budget × delay grid on the existing solver | `week6/` |
 | 7 | Phase 2 midpoint: demo-point recommendation, then stop | `week7/` |
+| 8 | Phase 2 finish-slice: CSV/JSON export, smoke, `GET /phase2/recommend` | `week7/` + `week3/` |
 
 Follow **[STEP_BY_STEP.md](STEP_BY_STEP.md)** if you are new — it walks
 through each commit and how to run the code yourself.
