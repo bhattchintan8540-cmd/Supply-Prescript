@@ -102,5 +102,15 @@ Invite questions. Have [`Q&A_CHEAT_SHEET.md`](Q&A_CHEAT_SHEET.md) open on a seco
 | Problem + solution | 3 |
 | Weeks 1–4 story | 4 |
 | Live demo | 3–5 |
+| Phase 2 midpoint (optional) | 1–2 |
 | Results + close | 1 |
 | Q&A | remaining |
+
+---
+
+## Phase 2 midpoint talking points (optional)
+
+> “After the closed loop, we pushed Phase 2 only to the midpoint: a short budget × delay grid, a demo-point recommendation, CSV/JSON exports, and `GET /phase2/recommend`.  
+> We stop before writing a decision or retraining — that keeps the story honest about how far we went.”
+
+Commands: `python week7/smoke_phase2.py` or `make phase2-export`.

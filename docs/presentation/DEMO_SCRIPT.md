@@ -86,6 +86,25 @@ Open **http://127.0.0.1:8000/ui/**
 
 ---
 
+## Mode C — Phase 2 midpoint (≈90 sec)
+
+Use this when the trainer asks how far Phase 2 went beyond the single prescribe call.
+
+```bash
+python week7/smoke_phase2.py
+# optional, with API running:
+curl http://127.0.0.1:8000/phase2/recommend
+```
+
+Talk track:
+
+1. “Week 6 walks a 3×3 budget × max-delay grid on the same solver — no new channels.”
+2. “Week 7 stops at the demo point ($100k, 5 days) and names the cheapest feasible pure option.”
+3. “We export `data/phase2_grid.csv` and `data/phase2_recommendation.json`, and expose `GET /phase2/recommend`.”
+4. “We deliberately stop before write-back and retrain — that is the midpoint, not the full loop again.”
+
+---
+
 ## If something breaks live
 
 | Problem | Fix |
