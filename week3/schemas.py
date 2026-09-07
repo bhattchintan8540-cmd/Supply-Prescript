@@ -195,3 +195,11 @@ class Phase2RecommendResponse(BaseModel):
     same_winner_cells: int
     grid_cells: int
     grid: list[Phase2GridCell]
+
+
+class Phase2GridResponse(BaseModel):
+    """Nine-cell Phase 2 midpoint grid (no recommendation pick)."""
+
+    sku: str
+    grid_cells: int
+    grid: list[Phase2GridCell]
