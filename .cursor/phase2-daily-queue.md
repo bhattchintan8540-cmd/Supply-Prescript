@@ -3,9 +3,10 @@
 
 ## Done
 - [x] 16 — Add GET /phase2/grid that returns the nine-cell JSON grid (2026-09-29)
+- [x] 17 — API test for GET /phase2/grid (2026-09-30)
 
 ## Remaining (one per day)
-- [ ] 17 — API test for GET /phase2/grid
+
 - [ ] 18 — Accept optional budget / max_delay query params on /phase2/recommend
 - [ ] 19 — Test query-param overrides on /phase2/recommend
 - [ ] 20 — Write Phase 2 decision draft helper (in-memory, still no DB write-back)
@@ -16,4 +17,5 @@
 3. Commit with a clear message matching the item. Current date only (no backdating).
 4. Check the box for that item in this file in the same commit (or the next small docs touch).
 5. Do NOT push to GitHub unless the user explicitly asks.
-6. If all items are checked, make no commit and stop.
+6. When pushing a daily commit, fast-forward that commit onto main and push main. Do not open a pull request. Do not create a "Merge pull request" commit.
+7. If all items are checked, make no commit and stop.
