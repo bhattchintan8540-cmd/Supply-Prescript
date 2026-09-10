@@ -4,10 +4,10 @@
 ## Done
 - [x] 16 — Add GET /phase2/grid that returns the nine-cell JSON grid (2026-09-29)
 - [x] 17 — API test for GET /phase2/grid (2026-09-30)
+- [x] 18 — Accept optional budget / max_delay query params on /phase2/recommend (2026-09-30)
 
 ## Remaining (one per day)
 
-- [ ] 18 — Accept optional budget / max_delay query params on /phase2/recommend
 - [ ] 19 — Test query-param overrides on /phase2/recommend
 - [ ] 20 — Write Phase 2 decision draft helper (in-memory, still no DB write-back)
 

@@ -46,7 +46,7 @@ from week1.config import (
 from week1.database import get_session, init_db
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
-from week6.phase2_midpoint import SAMPLE, sweep_phase2
+from week6.phase2_midpoint import SAMPLE, evaluate_point, sweep_phase2
 from week7.recommend import recommend_midpoint
 
 from . import schemas
@@ -437,13 +437,45 @@ def decisions_roi(session: Session = Depends(get_session)):
 
 
 @app.get("/phase2/recommend", response_model=schemas.Phase2RecommendResponse)
-def phase2_recommend() -> schemas.Phase2RecommendResponse:
-    """Phase 2 midpoint: cheapest pure option at the demo budget/delay cell.
+def phase2_recommend(
+    budget: float | None = None,
+    max_delay: float | None = None,
+) -> schemas.Phase2RecommendResponse:
+    """Phase 2 midpoint: cheapest pure option at a budget/delay cell.
 
-    Runs the week 6 grid + week 7 recommendation. Does not load the delay
-    model, write a decision, or retrain.
+    Optional ``budget`` and ``max_delay`` query params override the demo
+    operating point. Omitted params stay at the demo cell. Does not load
+    the delay model, write a decision, or retrain.
     """
     result = recommend_midpoint()
+    if budget is not None or max_delay is not None:
+        budget_cap = result["budget_cap_usd"] if budget is None else budget
+        delay_cap = result["max_acceptable_delay_days"] if max_delay is None else max_delay
+        match = next(
+            (
+                row
+                for row in result["grid"]
+                if row["budget_cap_usd"] == budget_cap
+                and row["max_acceptable_delay_days"] == delay_cap
+            ),
+            None,
+        )
+        if match is None:
+            match = evaluate_point(budget_cap, delay_cap)
+        winner = match["winner_label"]
+        result = {
+            **result,
+            "budget_cap_usd": budget_cap,
+            "max_acceptable_delay_days": delay_cap,
+            "winner_label": winner,
+            "winner_cost_usd": match["winner_cost_usd"],
+            "milp_feasible": match["milp_feasible"],
+            "same_winner_cells": sum(
+                1
+                for row in result["grid"]
+                if winner is not None and row["winner_label"] == winner
+            ),
+        }
     grid = [
         schemas.Phase2GridCell(
             budget_cap_usd=row["budget_cap_usd"],
