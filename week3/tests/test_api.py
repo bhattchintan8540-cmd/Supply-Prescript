@@ -177,6 +177,58 @@ def test_phase2_recommend_endpoint(client):
     assert 1 <= body["same_winner_cells"] <= body["grid_cells"]
 
 
+def test_phase2_recommend_query_overrides(client):
+    demo = client.get("/phase2/recommend")
+    assert demo.status_code == 200
+    demo_body = demo.json()
+    assert demo_body["budget_cap_usd"] == 100_000
+    assert demo_body["max_acceptable_delay_days"] == 5
+    demo_cell = _grid_cell(demo_body, 100_000, 5)
+    assert demo_body["winner_label"] == demo_cell["winner_label"]
+    assert demo_body["winner_cost_usd"] == demo_cell["winner_cost_usd"]
+
+    overridden = client.get("/phase2/recommend", params={"budget": 120_000, "max_delay": 8})
+    assert overridden.status_code == 200
+    body = overridden.json()
+    assert body["budget_cap_usd"] == 120_000
+    assert body["max_acceptable_delay_days"] == 8
+    assert body["grid_cells"] == 9
+    cell = _grid_cell(body, 120_000, 8)
+    assert body["winner_label"] == cell["winner_label"]
+    assert body["winner_cost_usd"] == cell["winner_cost_usd"]
+    assert body["milp_feasible"] == cell["milp_feasible"]
+
+    budget_only = client.get("/phase2/recommend", params={"budget": 80_000})
+    assert budget_only.status_code == 200
+    budget_body = budget_only.json()
+    assert budget_body["budget_cap_usd"] == 80_000
+    assert budget_body["max_acceptable_delay_days"] == 5
+    tight = _grid_cell(budget_body, 80_000, 5)
+    assert budget_body["winner_label"] == tight["winner_label"]
+    assert budget_body["winner_cost_usd"] == tight["winner_cost_usd"]
+
+    off_grid = client.get("/phase2/recommend", params={"budget": 90_000, "max_delay": 4})
+    assert off_grid.status_code == 200
+    off = off_grid.json()
+    assert off["budget_cap_usd"] == 90_000
+    assert off["max_acceptable_delay_days"] == 4
+    assert off["grid_cells"] == 9
+    assert off["winner_label"] in {
+        "Air Freight",
+        "Secondary Supplier",
+        "Delay Launch",
+        None,
+    }
+
+
+def _grid_cell(body: dict, budget: float, delay: float) -> dict:
+    return next(
+        cell
+        for cell in body["grid"]
+        if cell["budget_cap_usd"] == budget and cell["max_acceptable_delay_days"] == delay
+    )
+
+
 def test_phase2_grid_endpoint(client):
     resp = client.get("/phase2/grid")
     assert resp.status_code == 200
