@@ -6,10 +6,10 @@
 - [x] 17 — API test for GET /phase2/grid (2026-09-30)
 - [x] 18 — Accept optional budget / max_delay query params on /phase2/recommend (2026-09-30)
 - [x] 19 — Test query-param overrides on /phase2/recommend (2026-10-01)
+- [x] 20 — Write Phase 2 decision draft helper (in-memory, still no DB write-back) (2026-10-01)
 
 ## Remaining (one per day)
 
-- [ ] 20 — Write Phase 2 decision draft helper (in-memory, still no DB write-back)
 
 ## Rules for the daily agent
 1. Open repo Supply-Prescript on branch main (or cursor/phase2-daily-16-20).
