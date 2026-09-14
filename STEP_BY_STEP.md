@@ -142,10 +142,10 @@ a grid table, `data/phase2_recommendation.json`, then
 
 ---
 
-## Step 8 — Phase 2 smoke + API check
+## Step 8 — Week 8: Phase 2 finish
 
 ```bash
-python week7/smoke_phase2.py
+python week8/smoke_phase2.py
 make phase2-export
 ```
 
@@ -153,10 +153,11 @@ With the API up (`make api`):
 
 ```bash
 curl http://127.0.0.1:8000/phase2/recommend
+curl "http://127.0.0.1:8000/phase2/recommend?budget=120000&max_delay=8"
 ```
 
-Smoke prints `WEEK7 PHASE2 SMOKE OK`. The GET route returns the same
-demo-point winner without training.
+Smoke prints `WEEK8 PHASE2 FINISH OK` and `draft_persisted=False`. The
+GET route returns the same demo-point winner without training.
 
 ---
 

@@ -40,10 +40,11 @@ evaluate:
 smoke:
 	python week5/smoke_loop.py
 
-# Weeks 6 and 7 — Phase 2 stopped at the midpoint
+# Weeks 6–8 — Phase 2 grid, demo recommendation, then the finish smoke
 phase2:
 	python week6/phase2_midpoint.py
 	python week7/recommend.py
+	python week8/smoke_phase2.py
 
 # Export only: grid CSV + recommendation JSON under data/
 phase2-export: phase2

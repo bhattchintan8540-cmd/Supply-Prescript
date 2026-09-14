@@ -48,7 +48,7 @@ flowchart LR
 | 5 | `week5/` | Confusion-matrix evaluation + closed-loop smoke |
 | 6 | `week6/` | Phase 2 midpoint: short budget × delay sweep |
 | 7 | `week7/` | Phase 2 midpoint: name the demo-point option, then stop |
-| 8 | `week7/` + `week3/` | Phase 2 finish-slice: exports, smoke, `/phase2/recommend` |
+| 8 | `week8/` | Phase 2 finish: exports, smoke, in-memory draft, `/phase2/recommend` |
 
 ---
 
@@ -166,15 +166,17 @@ python week5/smoke_loop.py         # data → train → prescribe → outcome
 
 ---
 
-## Weeks 6 and 7 — Phase 2, to the midpoint
+## Weeks 6–8 — Phase 2
 
-Week 2 already contains the solver. These two weeks run that same
-Phase 2 forward only as far as a 3×3 constraint grid and a demo-point
-recommendation. They do not add channels, write a decision, or retrain.
+Week 2 already contains the solver. Week 6 walks a 3×3 constraint grid.
+Week 7 names the demo-point option. Week 8 exports both files, smokes
+that path, and keeps the decision draft in memory. None of these weeks
+add channels or retrain.
 
 ```bash
 python week6/phase2_midpoint.py    # budget x max-delay grid → data/phase2_grid.csv
 python week7/recommend.py          # demo-point option → data/phase2_recommendation.json
+python week8/smoke_phase2.py       # export + draft, no database write
 ```
 
 With the API running (`make api`):

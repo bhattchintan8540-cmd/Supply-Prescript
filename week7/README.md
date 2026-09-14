@@ -6,6 +6,8 @@ delay ceiling.
 
 It names the cheapest pure option that is inside both limits, and how
 many neighboring cells agree. It does not save a decision or retrain.
+Week 8 (`week8/`) exports the files, smokes the path, and serves
+`GET /phase2/recommend`.
 
 ## Run it
 

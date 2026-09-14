@@ -91,7 +91,7 @@ Open **http://127.0.0.1:8000/ui/**
 Use this when the trainer asks how far Phase 2 went beyond the single prescribe call.
 
 ```bash
-python week7/smoke_phase2.py
+python week8/smoke_phase2.py
 # optional, with API running:
 curl http://127.0.0.1:8000/phase2/recommend
 ```

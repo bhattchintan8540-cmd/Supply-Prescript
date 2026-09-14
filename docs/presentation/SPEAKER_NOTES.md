@@ -113,4 +113,4 @@ Invite questions. Have [`Q&A_CHEAT_SHEET.md`](Q&A_CHEAT_SHEET.md) open on a seco
 > “After the closed loop, we pushed Phase 2 only to the midpoint: a short budget × delay grid, a demo-point recommendation, CSV/JSON exports, and `GET /phase2/recommend`.  
 > We stop before writing a decision or retraining — that keeps the story honest about how far we went.”
 
-Commands: `python week7/smoke_phase2.py` or `make phase2-export`.
+Commands: `python week8/smoke_phase2.py` or `make phase2-export`.
