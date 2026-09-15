@@ -47,6 +47,7 @@ from week1.database import get_session, init_db
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
 from week6.phase2_midpoint import SAMPLE, sweep_phase2
+from week7.draft import draft_decision
 from week8.recommend import recommend_at
 
 from . import schemas
@@ -489,6 +490,27 @@ def phase2_grid() -> schemas.Phase2GridResponse:
         sku=SAMPLE["sku"],
         grid_cells=len(grid),
         grid=grid,
+    )
+
+
+@app.post("/phase2/draft-decision", response_model=schemas.Phase2DraftResponse)
+def phase2_draft_decision(
+    payload: schemas.Phase2DraftRequest | None = None,
+) -> schemas.Phase2DraftResponse:
+    """Preview the Phase 2 decision. Does not insert a row."""
+    payload = payload or schemas.Phase2DraftRequest()
+    result = recommend_at(budget=payload.budget, max_delay=payload.max_delay)
+    draft = draft_decision(result)
+    return schemas.Phase2DraftResponse(
+        shipment_sku=draft["shipment_sku"],
+        predicted_delay_days=draft["predicted_delay_days"],
+        predicted_delay_probability=draft["predicted_delay_probability"],
+        chosen_option_label=draft["chosen_option_label"],
+        predicted_cost_usd=draft["predicted_cost_usd"],
+        no_action_cost_usd=draft["no_action_cost_usd"],
+        budget_cap_usd=draft["budget_cap_usd"],
+        max_acceptable_delay_days=draft["max_acceptable_delay_days"],
+        persisted=False,
     )
 
 

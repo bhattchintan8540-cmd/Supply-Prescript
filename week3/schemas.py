@@ -203,3 +203,24 @@ class Phase2GridResponse(BaseModel):
     sku: str
     grid_cells: int
     grid: list[Phase2GridCell]
+
+
+class Phase2DraftRequest(BaseModel):
+    """Optional operating point for a preview. Omitted fields use the demo cell."""
+
+    budget: float | None = None
+    max_delay: float | None = None
+
+
+class Phase2DraftResponse(BaseModel):
+    """In-memory decision preview. ``persisted`` is always false."""
+
+    shipment_sku: str
+    predicted_delay_days: float
+    predicted_delay_probability: float
+    chosen_option_label: str | None = None
+    predicted_cost_usd: float | None = None
+    no_action_cost_usd: float | None = None
+    budget_cap_usd: float
+    max_acceptable_delay_days: float
+    persisted: bool
