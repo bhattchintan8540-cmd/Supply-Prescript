@@ -246,3 +246,25 @@ def test_phase2_grid_endpoint(client):
             None,
         }
         assert isinstance(cell["milp_feasible"], bool)
+
+
+def test_phase2_draft_decision_is_preview_only(client):
+    resp = client.post("/phase2/draft-decision", json={})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["persisted"] is False
+    assert body["shipment_sku"] == "MICROCHIP-A2"
+    assert body["budget_cap_usd"] == 100_000
+    assert body["max_acceptable_delay_days"] == 5
+    assert client.get("/decisions").json() == []
+
+    overridden = client.post(
+        "/phase2/draft-decision",
+        json={"budget": 120_000, "max_delay": 8},
+    )
+    assert overridden.status_code == 200
+    preview = overridden.json()
+    assert preview["budget_cap_usd"] == 120_000
+    assert preview["max_acceptable_delay_days"] == 8
+    assert preview["persisted"] is False
+    assert client.get("/decisions").json() == []
