@@ -7,6 +7,7 @@ from week6.phase2_midpoint import DEMO_BUDGET_USD, DEMO_MAX_DELAY_DAYS, sweep_ph
 from week7.recommend import (
     format_grid_table,
     format_recommendation,
+    main,
     persist_recommendation,
     recommend_midpoint,
 )
@@ -35,6 +36,14 @@ def test_recommendation_print_includes_grid_table():
     assert "pure winner" in table
     assert "* = demo operating point" in table
     assert table in text
+
+
+def test_json_out_flag_writes_the_given_path(tmp_path: Path):
+    dest = tmp_path / "custom_recommendation.json"
+    assert main(["--json-out", str(dest)]) == 0
+    payload = json.loads(dest.read_text(encoding="utf-8"))
+    assert payload["winner_label"]
+    assert payload["grid_cells"] == 9
 
 
 def test_persist_recommendation_writes_json(tmp_path: Path):

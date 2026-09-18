@@ -9,6 +9,7 @@ pick that same option. Does not write a decision or call retrain.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -119,9 +120,24 @@ def persist_recommendation(
     return path
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Week 7 Phase 2 midpoint recommendation")
+    parser.add_argument(
+        "--json-out",
+        type=Path,
+        default=None,
+        help="Write the recommendation JSON here (default: data/phase2_recommendation.json)",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     result = recommend_midpoint()
-    json_path = persist_recommendation(result)
+    json_path = persist_recommendation(
+        result,
+        path=RECOMMENDATION_JSON_PATH if args.json_out is None else args.json_out,
+    )
     print(format_recommendation(result))
     print()
     print(f"Wrote {json_path}")
