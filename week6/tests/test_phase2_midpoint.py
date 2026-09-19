@@ -10,6 +10,7 @@ from week6.phase2_midpoint import (
     MAX_DELAYS_DAYS,
     evaluate_point,
     export_grid_csv,
+    main,
     sweep_phase2,
 )
 
@@ -44,6 +45,14 @@ def test_export_grid_csv_writes_nine_rows(tmp_path: Path):
         exported = list(csv.DictReader(handle))
     assert len(exported) == len(rows)
     assert exported[0]["budget_cap_usd"] == str(rows[0]["budget_cap_usd"])
+
+
+def test_csv_out_flag_writes_the_given_path(tmp_path: Path):
+    dest = tmp_path / "custom_grid.csv"
+    assert main(["--csv-out", str(dest)]) == 0
+    with dest.open(encoding="utf-8") as handle:
+        exported = list(csv.DictReader(handle))
+    assert len(exported) == 9
 
 
 def test_tight_budget_can_leave_no_feasible_pure_option():

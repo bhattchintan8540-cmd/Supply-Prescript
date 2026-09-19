@@ -112,6 +112,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Comma-separated max delay days (default: 3,5,8)",
     )
+    parser.add_argument(
+        "--csv-out",
+        type=Path,
+        default=None,
+        help="Write the grid CSV here (default: data/phase2_grid.csv)",
+    )
     return parser
 
 
@@ -157,7 +163,7 @@ def export_grid_csv(rows: list[dict], path: Path = GRID_CSV_PATH) -> Path:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     rows = sweep_phase2(budgets=args.budgets, max_delays=args.max_delays)
-    csv_path = export_grid_csv(rows)
+    csv_path = export_grid_csv(rows, path=GRID_CSV_PATH if args.csv_out is None else args.csv_out)
     print(format_report(rows))
     print()
     print(f"Wrote {csv_path}")
