@@ -140,6 +140,8 @@ Slides: [docs/presentation/slides.html](docs/presentation/slides.html).
 | `GET /decisions/cost-accuracy` | Forecast error + budget adherence |
 | `GET /decisions/roi` | **True ROI** vs Delay Launch counterfactual |
 | `GET /phase2/recommend` | Phase 2 midpoint: cheapest pure option on the demo grid |
+| `GET /phase2/grid` | Nine-cell Phase 2 budget × delay grid |
+| `POST /phase2/draft-decision` | In-memory decision preview (no database write) |
 | `GET /health` | Liveness + whether the model is loaded |
 
 ---
@@ -182,8 +184,12 @@ python week8/smoke_phase2.py       # export + draft, no database write
 With the API running (`make api`):
 
 ```bash
+curl http://127.0.0.1:8000/phase2/grid
 curl http://127.0.0.1:8000/phase2/recommend
+curl -X POST http://127.0.0.1:8000/phase2/draft-decision -H "Content-Type: application/json" -d "{}"
 ```
+
+`POST /phase2/draft-decision` returns the recommended option as a decision-shaped preview. `persisted` is false, and no row is inserted.
 
 ---
 
