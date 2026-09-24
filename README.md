@@ -138,6 +138,7 @@ Slides: [docs/presentation/slides.html](docs/presentation/slides.html).
 | `PATCH /decisions/{id}/outcome` | **Close the loop** — log actual cost/delay |
 | `GET /decisions/cost-accuracy` | Forecast error + budget adherence |
 | `GET /decisions/roi` | **True ROI** vs Delay Launch counterfactual |
+| `GET /phase2/recommend` | Phase 2 midpoint: cheapest pure option on the demo grid |
 | `GET /health` | Liveness + whether the model is loaded |
 
 ---
@@ -171,8 +172,14 @@ Phase 2 forward only as far as a 3×3 constraint grid and a demo-point
 recommendation. They do not add channels, write a decision, or retrain.
 
 ```bash
-python week6/phase2_midpoint.py    # budget x max-delay grid
-python week7/recommend.py          # cheapest feasible option at the demo point
+python week6/phase2_midpoint.py    # budget x max-delay grid → data/phase2_grid.csv
+python week7/recommend.py          # demo-point option → data/phase2_recommendation.json
+```
+
+With the API running (`make api`):
+
+```bash
+curl http://127.0.0.1:8000/phase2/recommend
 ```
 
 ---
