@@ -1,7 +1,7 @@
 """Week 7 checks the midpoint recommendation against the week 6 grid."""
 
 from week6.phase2_midpoint import DEMO_BUDGET_USD, DEMO_MAX_DELAY_DAYS, sweep_phase2
-from week7.recommend import recommend_midpoint
+from week7.recommend import format_grid_table, format_recommendation, recommend_midpoint
 
 
 def test_recommendation_matches_demo_cell():
@@ -18,3 +18,12 @@ def test_recommendation_matches_demo_cell():
     assert result["milp_feasible"] == center["milp_feasible"]
     assert result["grid_cells"] == len(rows)
     assert 1 <= result["same_winner_cells"] <= result["grid_cells"]
+
+
+def test_recommendation_print_includes_grid_table():
+    result = recommend_midpoint()
+    table = format_grid_table(result["grid"])
+    text = format_recommendation(result)
+    assert "pure winner" in table
+    assert "* = demo operating point" in table
+    assert table in text

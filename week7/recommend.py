@@ -41,14 +41,38 @@ def recommend_midpoint(rows: list[dict] | None = None) -> dict:
         "milp_feasible": center["milp_feasible"],
         "same_winner_cells": same,
         "grid_cells": len(grid),
+        "grid": grid,
     }
+
+
+def format_grid_table(grid: list[dict]) -> str:
+    """Pretty-print every midpoint cell as an aligned table."""
+    lines = [
+        f"{'budget':>12}  {'max delay':>9}  {'pure winner':<22}  {'cost':>12}  milp",
+        "-" * 72,
+    ]
+    for row in grid:
+        cost = "—" if row["winner_cost_usd"] is None else f"${row['winner_cost_usd']:,.2f}"
+        winner = row["winner_label"] or "(none feasible)"
+        milp = "feasible" if row["milp_feasible"] else "infeasible"
+        marker = " *" if (
+            row["budget_cap_usd"] == DEMO_BUDGET_USD
+            and row["max_acceptable_delay_days"] == DEMO_MAX_DELAY_DAYS
+        ) else ""
+        lines.append(
+            f"${row['budget_cap_usd']:>10,.0f}  "
+            f"{row['max_acceptable_delay_days']:>8.0f}d  "
+            f"{winner:<22}  {cost:>12}  {milp}{marker}"
+        )
+    lines.append("(* = demo operating point)")
+    return "\n".join(lines)
 
 
 def format_recommendation(result: dict) -> str:
     winner = result["winner_label"] or "(none feasible)"
     cost = "n/a" if result["winner_cost_usd"] is None else f"${result['winner_cost_usd']:,.2f}"
     milp = "feasible" if result["milp_feasible"] else "infeasible"
-    return "\n".join(
+    header = "\n".join(
         [
             "Week 7 — Phase 2 midpoint recommendation",
             f"Shipment {result['sku']}",
@@ -57,9 +81,13 @@ def format_recommendation(result: dict) -> str:
             f"Cheapest feasible pure option: {winner} ({cost})",
             f"MILP split at that point: {milp}",
             f"Same pure winner on {result['same_winner_cells']} of {result['grid_cells']} grid cells",
+            "",
+            format_grid_table(result.get("grid") or []),
+            "",
             "Stopped here: no decision write-back and no retrain.",
         ]
     )
+    return header
 
 
 def main() -> int:
