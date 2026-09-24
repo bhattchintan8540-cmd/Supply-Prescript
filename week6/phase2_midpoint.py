@@ -10,12 +10,16 @@ demo shipment and records which pure option stays inside both limits.
 """
 from __future__ import annotations
 
+import csv
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from week2.solver import pure_options, solve_optimal_allocation
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+GRID_CSV_PATH = ROOT_DIR / "data" / "phase2_grid.csv"
 
 # Same shipment and prediction the week 5 smoke loop uses, so this run
 # does not need a fresh training pass.
@@ -99,9 +103,31 @@ def format_report(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def export_grid_csv(rows: list[dict], path: Path = GRID_CSV_PATH) -> Path:
+    """Write the nine midpoint cells to CSV under data/ (gitignored)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "budget_cap_usd",
+        "max_acceptable_delay_days",
+        "winner_label",
+        "winner_cost_usd",
+        "milp_status",
+        "milp_feasible",
+    ]
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row.get(key) for key in fieldnames})
+    return path
+
+
 def main() -> int:
-    print(format_report(sweep_phase2()))
+    rows = sweep_phase2()
+    csv_path = export_grid_csv(rows)
+    print(format_report(rows))
     print()
+    print(f"Wrote {csv_path}")
     print("WEEK6 PHASE2 MIDPOINT OK")
     return 0
 
