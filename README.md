@@ -46,6 +46,8 @@ flowchart LR
 | 3 | `week3/` | FastAPI: prescribe → write-back → outcome → cost accuracy + ROI |
 | 4 | `week4/` | Drift check + outcome-aware retrain |
 | 5 | `week5/` | Confusion-matrix evaluation + closed-loop smoke |
+| 6 | `week6/` | Phase 2 midpoint: short budget × delay sweep |
+| 7 | `week7/` | Phase 2 midpoint: name the demo-point option, then stop |
 
 ---
 
@@ -158,6 +160,19 @@ Reload the live API model afterward with `POST /model/reload`.
 ```bash
 python week1/evaluate_xgboost.py   # confusion matrix + baseline verdict
 python week5/smoke_loop.py         # data → train → prescribe → outcome
+```
+
+---
+
+## Weeks 6 and 7 — Phase 2, to the midpoint
+
+Week 2 already contains the solver. These two weeks run that same
+Phase 2 forward only as far as a 3×3 constraint grid and a demo-point
+recommendation. They do not add channels, write a decision, or retrain.
+
+```bash
+python week6/phase2_midpoint.py    # budget x max-delay grid
+python week7/recommend.py          # cheapest feasible option at the demo point
 ```
 
 ---

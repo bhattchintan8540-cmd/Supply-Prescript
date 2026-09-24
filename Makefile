@@ -1,7 +1,7 @@
 # Convenience targets for beginners — run from the project root.
 # Example:  make setup && make train && make api
 
-.PHONY: setup data explore train demo demo-ui api test retrain evaluate smoke clean
+.PHONY: setup data explore train demo demo-ui api test retrain evaluate smoke phase2 clean
 
 setup:
 	python -m venv .venv
@@ -39,6 +39,11 @@ evaluate:
 
 smoke:
 	python week5/smoke_loop.py
+
+# Weeks 6 and 7 — Phase 2 stopped at the midpoint
+phase2:
+	python week6/phase2_midpoint.py
+	python week7/recommend.py
 
 clean:
 	rm -f data/*.csv data/*.joblib data/*.db data/metrics.json
