@@ -14,4 +14,5 @@ python week7/recommend.py
 python -m pytest week7 -q
 ```
 
-You should see the chosen option and the line `WEEK7 PHASE2 MIDPOINT OK`.
+You should see the chosen option, a grid table, a write to
+`data/phase2_recommendation.json`, and `WEEK7 PHASE2 MIDPOINT OK`.
