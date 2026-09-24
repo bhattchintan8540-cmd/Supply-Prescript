@@ -48,6 +48,7 @@ flowchart LR
 | 5 | `week5/` | Confusion-matrix evaluation + closed-loop smoke |
 | 6 | `week6/` | Phase 2 midpoint: short budget × delay sweep |
 | 7 | `week7/` | Phase 2 midpoint: name the demo-point option, then stop |
+| 8 | `week7/` + `week3/` | Phase 2 finish-slice: exports, smoke, `/phase2/recommend` |
 
 ---
 
