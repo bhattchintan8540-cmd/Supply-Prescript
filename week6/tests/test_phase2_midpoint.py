@@ -8,6 +8,7 @@ from week6.phase2_midpoint import (
     DEMO_BUDGET_USD,
     DEMO_MAX_DELAY_DAYS,
     MAX_DELAYS_DAYS,
+    evaluate_point,
     export_grid_csv,
     sweep_phase2,
 )
@@ -43,3 +44,11 @@ def test_export_grid_csv_writes_nine_rows(tmp_path: Path):
         exported = list(csv.DictReader(handle))
     assert len(exported) == len(rows)
     assert exported[0]["budget_cap_usd"] == str(rows[0]["budget_cap_usd"])
+
+
+def test_tight_budget_can_leave_no_feasible_pure_option():
+    """Very tight budget + delay ceiling → empty feasible set, not a crash."""
+    row = evaluate_point(budget_cap_usd=1.0, max_acceptable_delay_days=0.0)
+    assert row["winner_label"] is None
+    assert row["winner_cost_usd"] is None
+    assert all(not (opt["within_budget"] and opt["within_sla"]) for opt in row["options"])
