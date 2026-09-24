@@ -123,9 +123,10 @@ See `week5/README.md` for the evaluation deliverables folder.
 
 ```bash
 python week6/phase2_midpoint.py
+python week6/phase2_midpoint.py --budgets 80000,100000 --max-delays 5,8
 ```
 
-Nine rows, then `WEEK6 PHASE2 MIDPOINT OK`.
+Grid rows, `data/phase2_grid.csv`, then `WEEK6 PHASE2 MIDPOINT OK`.
 
 ---
 
@@ -136,11 +137,30 @@ python week7/recommend.py
 ```
 
 The cheapest feasible pure option at the demo budget and delay ceiling,
-then `WEEK7 PHASE2 MIDPOINT OK`.
+a grid table, `data/phase2_recommendation.json`, then
+`WEEK7 PHASE2 MIDPOINT OK`.
 
 ---
 
-## Step 8 — Tests
+## Step 8 — Phase 2 smoke + API check
+
+```bash
+python week7/smoke_phase2.py
+make phase2-export
+```
+
+With the API up (`make api`):
+
+```bash
+curl http://127.0.0.1:8000/phase2/recommend
+```
+
+Smoke prints `WEEK7 PHASE2 SMOKE OK`. The GET route returns the same
+demo-point winner without training.
+
+---
+
+## Step 9 — Tests
 
 From the project root:
 

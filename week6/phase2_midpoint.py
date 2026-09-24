@@ -10,12 +10,17 @@ demo shipment and records which pure option stays inside both limits.
 """
 from __future__ import annotations
 
+import argparse
+import csv
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from week2.solver import pure_options, solve_optimal_allocation
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+GRID_CSV_PATH = ROOT_DIR / "data" / "phase2_grid.csv"
 
 # Same shipment and prediction the week 5 smoke loop uses, so this run
 # does not need a fresh training pass.
@@ -70,13 +75,44 @@ def evaluate_point(budget_cap_usd: float, max_acceptable_delay_days: float) -> d
     }
 
 
-def sweep_phase2() -> list[dict]:
-    """The nine midpoint cells. Stops there — no finer search, no new channels."""
+def sweep_phase2(
+    budgets: tuple[float, ...] | None = None,
+    max_delays: tuple[float, ...] | None = None,
+) -> list[dict]:
+    """Budget × delay cells. Defaults to the 3×3 midpoint grid."""
+    budget_values = BUDGETS_USD if budgets is None else budgets
+    delay_values = MAX_DELAYS_DAYS if max_delays is None else max_delays
     return [
         evaluate_point(budget, max_delay)
-        for budget in BUDGETS_USD
-        for max_delay in MAX_DELAYS_DAYS
+        for budget in budget_values
+        for max_delay in delay_values
     ]
+
+
+def _parse_float_list(raw: str) -> tuple[float, ...]:
+    parts = [part.strip() for part in raw.split(",") if part.strip()]
+    if not parts:
+        raise argparse.ArgumentTypeError("expected at least one number")
+    return tuple(float(part) for part in parts)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Week 6 Phase 2 midpoint budget × max-delay sweep",
+    )
+    parser.add_argument(
+        "--budgets",
+        type=_parse_float_list,
+        default=None,
+        help="Comma-separated budget caps in USD (default: 80000,100000,120000)",
+    )
+    parser.add_argument(
+        "--max-delays",
+        type=_parse_float_list,
+        default=None,
+        help="Comma-separated max delay days (default: 3,5,8)",
+    )
+    return parser
 
 
 def format_report(rows: list[dict]) -> str:
@@ -99,9 +135,32 @@ def format_report(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
-    print(format_report(sweep_phase2()))
+def export_grid_csv(rows: list[dict], path: Path = GRID_CSV_PATH) -> Path:
+    """Write the nine midpoint cells to CSV under data/ (gitignored)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "budget_cap_usd",
+        "max_acceptable_delay_days",
+        "winner_label",
+        "winner_cost_usd",
+        "milp_status",
+        "milp_feasible",
+    ]
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row.get(key) for key in fieldnames})
+    return path
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    rows = sweep_phase2(budgets=args.budgets, max_delays=args.max_delays)
+    csv_path = export_grid_csv(rows)
+    print(format_report(rows))
     print()
+    print(f"Wrote {csv_path}")
     print("WEEK6 PHASE2 MIDPOINT OK")
     return 0
 

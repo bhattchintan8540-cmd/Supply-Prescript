@@ -5,6 +5,7 @@ data/*.db
 data/*.csv
 data/*.joblib
 data/metrics.json
+data/phase2_recommendation.json
 data/test_*.db
 data/ml_evaluation/
 exports/

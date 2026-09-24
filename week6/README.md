@@ -12,8 +12,10 @@ channels, write decisions, or retrain.
 
 ```bash
 python week6/phase2_midpoint.py
+python week6/phase2_midpoint.py --budgets 80000,100000 --max-delays 5,8
 python -m pytest week6 -q
 ```
 
-You should see nine rows and the line `WEEK6 PHASE2 MIDPOINT OK`.
-Week 7 reads this same grid and names the demo-point recommendation.
+You should see the grid rows, a write to `data/phase2_grid.csv`, and the
+line `WEEK6 PHASE2 MIDPOINT OK`. Week 7 reads this same grid and names
+the demo-point recommendation.

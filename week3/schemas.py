@@ -173,3 +173,25 @@ class ModelInfo(BaseModel):
     n_estimators_classifier: int | None = None
     max_depth: int | None = None
     scale_pos_weight: float | None = None
+
+
+class Phase2GridCell(BaseModel):
+    budget_cap_usd: float
+    max_acceptable_delay_days: float
+    winner_label: str | None = None
+    winner_cost_usd: float | None = None
+    milp_feasible: bool
+
+
+class Phase2RecommendResponse(BaseModel):
+    """Week 6/7 Phase 2 midpoint recommendation (no model train required)."""
+
+    sku: str
+    budget_cap_usd: float
+    max_acceptable_delay_days: float
+    winner_label: str | None = None
+    winner_cost_usd: float | None = None
+    milp_feasible: bool
+    same_winner_cells: int
+    grid_cells: int
+    grid: list[Phase2GridCell]
