@@ -46,6 +46,7 @@ from week1.config import (
 from week1.database import get_session, init_db
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
+from week7.recommend import recommend_midpoint
 
 from . import schemas
 
@@ -431,6 +432,37 @@ def decisions_roi(session: Session = Depends(get_session)):
         avg_avoided_loss_usd=round(sum(avoided) / len(avoided), 2),
         avg_roi_pct=round(sum(roi_pcts) / len(roi_pcts), 1),
         interventions_beating_no_action_pct=round(len(beats) / len(with_cf) * 100, 1),
+    )
+
+
+@app.get("/phase2/recommend", response_model=schemas.Phase2RecommendResponse)
+def phase2_recommend() -> schemas.Phase2RecommendResponse:
+    """Phase 2 midpoint: cheapest pure option at the demo budget/delay cell.
+
+    Runs the week 6 grid + week 7 recommendation. Does not load the delay
+    model, write a decision, or retrain.
+    """
+    result = recommend_midpoint()
+    grid = [
+        schemas.Phase2GridCell(
+            budget_cap_usd=row["budget_cap_usd"],
+            max_acceptable_delay_days=row["max_acceptable_delay_days"],
+            winner_label=row["winner_label"],
+            winner_cost_usd=row["winner_cost_usd"],
+            milp_feasible=row["milp_feasible"],
+        )
+        for row in result["grid"]
+    ]
+    return schemas.Phase2RecommendResponse(
+        sku=result["sku"],
+        budget_cap_usd=result["budget_cap_usd"],
+        max_acceptable_delay_days=result["max_acceptable_delay_days"],
+        winner_label=result["winner_label"],
+        winner_cost_usd=result["winner_cost_usd"],
+        milp_feasible=result["milp_feasible"],
+        same_winner_cells=result["same_winner_cells"],
+        grid_cells=result["grid_cells"],
+        grid=grid,
     )
 
 
