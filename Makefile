@@ -1,7 +1,7 @@
 # Convenience targets for beginners — run from the project root.
 # Example:  make setup && make train && make api
 
-.PHONY: setup data explore train demo demo-ui api test retrain evaluate smoke phase2 phase2-export clean
+.PHONY: setup data explore train demo demo-ui api test retrain evaluate smoke phase2 phase2-export phase2-smoke clean
 
 setup:
 	python -m venv .venv
@@ -49,6 +49,9 @@ phase2:
 # Export only: grid CSV + recommendation JSON under data/
 phase2-export: phase2
 	@echo "Exported data/phase2_grid.csv and data/phase2_recommendation.json"
+
+phase2-smoke:
+	python week8/smoke_phase2.py
 
 clean:
 	rm -f data/*.csv data/*.joblib data/*.db data/metrics.json
