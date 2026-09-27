@@ -21,6 +21,17 @@ You should see `data/phase2_grid.csv`, `data/phase2_recommendation.json`,
 With the API running (`make api`):
 
 ```bash
+curl http://127.0.0.1:8000/phase2/grid
 curl http://127.0.0.1:8000/phase2/recommend
 curl "http://127.0.0.1:8000/phase2/recommend?budget=120000&max_delay=8"
+curl -X POST http://127.0.0.1:8000/phase2/draft-decision -H "Content-Type: application/json" -d "{}"
 ```
+
+## Runbook
+
+1. `python week6/phase2_midpoint.py` writes `data/phase2_grid.csv`.
+2. `python week7/recommend.py` writes `data/phase2_recommendation.json`.
+3. `make phase2-smoke` checks export, the demo winner, and `draft_persisted=False`.
+4. Optional path overrides: `--csv-out` on week 6 and `--json-out` on week 7.
+5. `week8/sensitivity.py` counts how many grid cells share the winner and the cost spread.
+6. The dashboard badge links to `GET /phase2/recommend`. The draft route never writes a decision.
