@@ -24,6 +24,9 @@ Teams often discover a shipment is late **after** it is already late. Panic expe
 3. **Act** — FastAPI write-back, outcomes, cost accuracy + intervention ROI  
 4. **Learn** — drift threshold + outcome-aware retrain  
 
+## Phase 2
+After the closed loop, Phase 2 walks a 3×3 budget × delay grid on the same solver (`week6/`), names the demo-point option (`week7/`), then exports, smokes, and previews a decision in memory (`week8/`). It does not insert a decision or retrain. API: `GET /phase2/grid`, `GET /phase2/recommend`, `POST /phase2/draft-decision`.
+
 ## Snapshot results (seeded **synthetic** data)
 - **~4,000** shipments with calendar bad-quarter shock  
 - Metrics recover programmed relationships under temporal holdout — always compare to supplier baselines in `/model/info`  
