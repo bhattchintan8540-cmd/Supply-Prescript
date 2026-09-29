@@ -46,6 +46,7 @@ from week1.config import (
 from week1.database import get_session, init_db
 from week1.delay_model import DelayModel
 from week2.solver import pure_options, solve_optimal_allocation
+from week6.phase2_midpoint import SAMPLE, sweep_phase2
 from week7.recommend import recommend_midpoint
 
 from . import schemas
@@ -462,6 +463,27 @@ def phase2_recommend() -> schemas.Phase2RecommendResponse:
         milp_feasible=result["milp_feasible"],
         same_winner_cells=result["same_winner_cells"],
         grid_cells=result["grid_cells"],
+        grid=grid,
+    )
+
+
+@app.get("/phase2/grid", response_model=schemas.Phase2GridResponse)
+def phase2_grid() -> schemas.Phase2GridResponse:
+    """Return the nine-cell Phase 2 midpoint grid as JSON."""
+    rows = sweep_phase2()
+    grid = [
+        schemas.Phase2GridCell(
+            budget_cap_usd=row["budget_cap_usd"],
+            max_acceptable_delay_days=row["max_acceptable_delay_days"],
+            winner_label=row["winner_label"],
+            winner_cost_usd=row["winner_cost_usd"],
+            milp_feasible=row["milp_feasible"],
+        )
+        for row in rows
+    ]
+    return schemas.Phase2GridResponse(
+        sku=SAMPLE["sku"],
+        grid_cells=len(grid),
         grid=grid,
     )
 
