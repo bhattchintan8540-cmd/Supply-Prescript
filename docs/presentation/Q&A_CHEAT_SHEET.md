@@ -44,5 +44,8 @@ Yes — set `DATABASE_URL` and use `docker compose up -d`. SQLite is the zero-se
 ### What’s missing for production?
 Auth, richer inventory/MRP inputs, calibrated freight contracts, real alternate-supplier selection, monitoring/alerting, scheduler for retrain. See `docs/business/07_production_data_requirements.md`.
 
+### How far did Phase 2 go?
+Week 6 walks a 3×3 budget × delay grid. Week 7 names the cheapest feasible pure option at $100,000 and 5 days. Week 8 exports those files, smokes the path, and previews a decision with `POST /phase2/draft-decision`. That preview is in memory only — no decision row and no retrain.
+
 ### Where is the code?
-GitHub repo folders `week1`–`week4`, business docs in `docs/business/`, beginner guide `STEP_BY_STEP.md`.
+GitHub repo folders `week1`–`week8`, business docs in `docs/business/`, beginner guide `STEP_BY_STEP.md`.
