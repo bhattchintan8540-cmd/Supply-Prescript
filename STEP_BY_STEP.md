@@ -159,6 +159,16 @@ curl "http://127.0.0.1:8000/phase2/recommend?budget=120000&max_delay=8"
 Smoke prints `WEEK8 PHASE2 FINISH OK` and `draft_persisted=False`. The
 GET route returns the same demo-point winner without training.
 
+Phase 2 completion checklist:
+
+- [ ] `python week6/phase2_midpoint.py` writes `data/phase2_grid.csv`
+- [ ] `python week7/recommend.py` writes `data/phase2_recommendation.json`
+- [ ] `make phase2-smoke` prints `WEEK8 PHASE2 FINISH OK`
+- [ ] `GET /phase2/grid` returns nine cells
+- [ ] `GET /phase2/recommend` names the demo-point winner
+- [ ] `POST /phase2/draft-decision` returns `persisted: false` and adds no decision row
+- [ ] Dashboard shows the Phase 2 midpoint badge linking to `/phase2/recommend`
+
 ---
 
 ## Step 9 — Tests
