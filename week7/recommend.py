@@ -59,7 +59,12 @@ def format_grid_table(grid: list[dict]) -> str:
     for row in grid:
         cost = "—" if row["winner_cost_usd"] is None else f"${row['winner_cost_usd']:,.2f}"
         winner = row["winner_label"] or "(none feasible)"
-        milp = "feasible" if row["milp_feasible"] else "infeasible"
+        if not row["milp_feasible"]:
+            milp = "infeasible"
+        elif row.get("milp_budget_relaxed"):
+            milp = "budget relaxed"
+        else:
+            milp = "feasible"
         marker = " *" if (
             row["budget_cap_usd"] == DEMO_BUDGET_USD
             and row["max_acceptable_delay_days"] == DEMO_MAX_DELAY_DAYS
@@ -105,6 +110,8 @@ def _json_ready(result: dict) -> dict:
             "winner_label": row["winner_label"],
             "winner_cost_usd": row["winner_cost_usd"],
             "milp_feasible": row["milp_feasible"],
+            "milp_budget_relaxed": row.get("milp_budget_relaxed", False),
+            "milp_within_budget": row.get("milp_within_budget", False),
         }
         for row in result.get("grid") or []
     ]
