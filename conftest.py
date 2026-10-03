@@ -21,10 +21,13 @@ from week1.database import init_db, engine, Base  # noqa: E402
 
 @pytest.fixture(scope="session", autouse=True)
 def _fresh_test_db():
+    # Dispose first so Windows can delete a sqlite file left by a prior run.
+    engine.dispose()
     if TEST_DB_PATH.exists():
         TEST_DB_PATH.unlink()
     init_db()
     yield
     Base.metadata.drop_all(bind=engine)
+    engine.dispose()
     if TEST_DB_PATH.exists():
         TEST_DB_PATH.unlink()
