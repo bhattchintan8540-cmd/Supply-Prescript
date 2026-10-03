@@ -23,16 +23,8 @@ header {
 
 header h1 { margin: 0; letter-spacing: -0.02em; }
 .tagline { margin: 0.25rem 0 0; color: #5b6472; }
-.phase2-badge {
-  display: inline-block;
-  margin-top: 0.75rem;
-  padding: 0.2rem 0.65rem;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 0.85rem;
-  text-decoration: none;
-}
+#phase2-panel tr.demo-cell { background: var(--accent-soft); }
+#phase2-summary .big-num { font-size: 1.35rem; }
 
 main { max-width: 960px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
 

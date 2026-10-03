@@ -10,7 +10,6 @@
   <header>
     <h1>SupplyPrescript</h1>
     <p class="tagline">Predict the delay. Prescribe the fix. Track whether it actually worked.</p>
-    <a class="phase2-badge" href="/phase2/recommend">Phase 2 midpoint</a>
   </header>
 
   <main>
@@ -69,11 +68,27 @@
       <div id="options-cards" class="cards"></div>
     </section>
 
+    <section id="phase2-panel">
+      <h2>Phase 2 — budget × delay grid</h2>
+      <p class="muted">The demo shipment is priced on a 3×3 grid. The draft stays in memory and is not written as a decision.</p>
+      <div id="phase2-summary" class="prediction-box">Loading Phase 2…</div>
+      <table id="phase2-grid">
+        <thead>
+          <tr>
+            <th>Budget</th><th>Max delay</th><th>Pure winner</th><th>Cost</th><th>MILP</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
     <section id="roi-section">
-      <h2>4. Closed-loop measurement</h2>
-      <p class="muted">Intervention ROI compares actual cost to the Delay Launch (no-action) baseline.
-         Cost accuracy is listed separately — forecast error is not ROI.</p>
-      <button id="refresh-roi">Refresh</button>
+      <h2>Phase 3 — close the loop</h2>
+      <p class="muted">Write back the chosen option, log the actual cost and delay, then compare that cost with Delay Launch. Cost error is not ROI. Retrain runs only when a drift signal crosses its threshold.</p>
+      <div id="phase3-status" class="prediction-box">Loading closed-loop status…</div>
+      <button id="phase3-retrain" type="button">Retrain if drift is high</button>
+      <button id="refresh-roi" type="button">Refresh</button>
+      <p id="loop-feedback" class="muted"></p>
       <h3>Intervention ROI (vs no action)</h3>
       <div id="roi-summary"></div>
       <h3>Cost forecast accuracy</h3>
@@ -90,6 +105,6 @@
     </section>
   </main>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

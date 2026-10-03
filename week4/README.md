@@ -17,6 +17,10 @@ python week4/retrain.py            # retrains only if drift is over threshold
 python week4/retrain.py --force    # retrains unconditionally
 ```
 
+The dashboard at `http://127.0.0.1:8000/ui/` shows the same loop under
+Phase 3: ROI versus Delay Launch, cost accuracy, and the drift signals
+from `GET /phase3/status`.
+
 ## What "closed loop" means here
 
 | Ingredient | Role |

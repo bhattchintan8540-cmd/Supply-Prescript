@@ -313,6 +313,120 @@ async function logOutcome(decisionId, predictedCost) {
   await loadDecisions();
 }
 
-document.getElementById("refresh-roi").addEventListener("click", loadDecisions);
+function money(value) {
+  if (value == null) return "—";
+  return "$" + Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
+async function loadPhase2() {
+  const summary = document.getElementById("phase2-summary");
+  const tbody = document.querySelector("#phase2-grid tbody");
+  if (!summary || !tbody) return;
+  try {
+    const recommend = await fetch(`${API_BASE}/phase2/recommend`);
+    if (!recommend.ok) throw new Error("recommend " + recommend.status);
+    const body = await recommend.json();
+    const draftResp = await fetch(`${API_BASE}/phase2/draft-decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    const draft = draftResp.ok ? await draftResp.json() : null;
+    const winner = body.winner_label || "No feasible pure option";
+    summary.innerHTML = `
+      <div>Demo point <span class="big-num">${money(body.budget_cap_usd)}</span> and <span class="big-num">${body.max_acceptable_delay_days}d</span></div>
+      <p>Cheapest feasible pure option: <strong>${winner}</strong> (${money(body.winner_cost_usd)}). Same winner on ${body.same_winner_cells} of ${body.grid_cells} cells. MILP ${body.milp_feasible ? "feasible" : "infeasible"}.</p>
+      <p class="muted">Draft preview for ${draft ? draft.shipment_sku : body.sku}: persisted = ${draft ? draft.persisted : "unknown"}. No decision row is inserted.</p>
+    `;
+    tbody.innerHTML = "";
+    body.grid.forEach((cell) => {
+      const row = document.createElement("tr");
+      const isDemo = cell.budget_cap_usd === body.budget_cap_usd && cell.max_acceptable_delay_days === body.max_acceptable_delay_days;
+      if (isDemo) row.className = "demo-cell";
+      row.innerHTML = `
+        <td>${money(cell.budget_cap_usd)}</td>
+        <td>${cell.max_acceptable_delay_days}d</td>
+        <td>${cell.winner_label || "No feasible pure option"}</td>
+        <td>${money(cell.winner_cost_usd)}</td>
+        <td>${cell.milp_feasible ? (cell.winner_label ? "feasible" : "budget relaxed") : "infeasible"}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (err) {
+    summary.textContent = "Phase 2 could not load. Start the API from the repo root, then refresh this page. " + err.message;
+  }
+}
+
+function pct(value) {
+  if (value == null) return "—";
+  return (Number(value) * 100).toFixed(1) + "%";
+}
+
+function setLoopFeedback(text) {
+  const note = document.getElementById("loop-feedback");
+  if (note) note.textContent = text;
+}
+
+async function loadPhase3() {
+  const box = document.getElementById("phase3-status");
+  const retrainBtn = document.getElementById("phase3-retrain");
+  if (!box) return;
+  try {
+    const resp = await fetch(`${API_BASE}/phase3/status`);
+    if (!resp.ok) throw new Error("status " + resp.status);
+    const body = await resp.json();
+    const limits = body.thresholds;
+    if (retrainBtn) retrainBtn.disabled = false;
+    const driftLine = body.resolved_decisions === 0
+      ? "No resolved outcome yet, so drift cannot be high. Execute a decision, then log its actual cost and delay."
+      : (body.should_retrain
+        ? "A drift signal is over its threshold. Retrain is available."
+        : "Drift is under the limits, so the model stays as it is.");
+    box.innerHTML = `
+      <div><span class="big-num">${body.resolved_decisions}</span> resolved of ${body.total_decisions} decisions</div>
+      <p>Cost error ${pct(body.cost_mape)} (retrain at ${pct(limits.cost_mape)}). Delay MAE ${body.delay_mae == null ? "—" : Number(body.delay_mae).toFixed(2) + "d"} (limit ${limits.delay_mae_days}d). Hard-miss ${pct(body.hard_miss_rate)} (limit ${pct(limits.hard_miss_rate)}). Brier ${body.outcome_brier == null ? "—" : Number(body.outcome_brier).toFixed(3)} (limit ${limits.outcome_brier}).</p>
+      <p class="muted">${driftLine} ${body.triggers.length ? "Triggers: " + body.triggers.join(", ") + "." : ""} Outcomes without a feature snapshot can raise drift but cannot become training rows.</p>
+    `;
+    return body;
+  } catch (err) {
+    box.textContent = "Closed-loop status could not load. " + err.message;
+    return null;
+  }
+}
+
+async function retrainIfDrift() {
+  const box = document.getElementById("phase3-status");
+  const button = document.getElementById("phase3-retrain");
+  if (button) button.disabled = true;
+  setLoopFeedback("Checking drift and refitting only if a signal is over its limit…");
+  try {
+    const resp = await fetch(`${API_BASE}/phase3/retrain`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ force: false }),
+    });
+    if (!resp.ok) throw new Error("retrain " + resp.status);
+    const body = await resp.json();
+    await loadPhase3();
+    setLoopFeedback(body.retrained
+      ? "Model refit and reloaded from disk."
+      : "No refit. " + (body.reason || "Drift is not over the limit."));
+  } catch (err) {
+    if (box) box.textContent = "Retrain check failed. " + err.message;
+    setLoopFeedback("Retrain check failed. " + err.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+document.getElementById("refresh-roi").addEventListener("click", async () => {
+  setLoopFeedback("Refreshing ROI, cost accuracy, and drift…");
+  await Promise.all([loadDecisions(), loadPhase3()]);
+  const stamp = new Date().toLocaleTimeString();
+  setLoopFeedback("Refreshed at " + stamp + ". Numbers change after you log an outcome.");
+});
+document.getElementById("phase3-retrain").addEventListener("click", retrainIfDrift);
 renderScenarios();
 loadDecisions();
+loadPhase2();
+loadPhase3();
