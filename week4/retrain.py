@@ -309,5 +309,13 @@ def maybe_retrain(force: bool = False, reload_api: bool = True) -> dict:
 
 
 if __name__ == "__main__":
-    result = maybe_retrain(force="--force" in sys.argv)
-    print(result)
+    if "--status" in sys.argv:
+        init_db()
+        session = SessionLocal()
+        try:
+            print(phase3_status(session))
+        finally:
+            session.close()
+    else:
+        result = maybe_retrain(force="--force" in sys.argv)
+        print(result)
