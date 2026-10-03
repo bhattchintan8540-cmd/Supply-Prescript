@@ -132,6 +132,33 @@ def outcome_drift_signals(session) -> dict | None:
     }
 
 
+def phase3_status(session) -> dict:
+    """Drift snapshot for the dashboard. Does not refit the model."""
+    total = session.query(models.Decision).count()
+    resolved_n = (
+        session.query(models.Decision)
+        .filter(models.Decision.actual_cost_usd.isnot(None))
+        .count()
+    )
+    signals = outcome_drift_signals(session)
+    return {
+        "total_decisions": total,
+        "resolved_decisions": resolved_n,
+        "cost_mape": None if signals is None else signals["cost_mape"],
+        "delay_mae": None if signals is None else signals["delay_mae"],
+        "hard_miss_rate": None if signals is None else signals["hard_miss_rate"],
+        "outcome_brier": None if signals is None else signals["outcome_brier"],
+        "should_retrain": False if signals is None else bool(signals["should_retrain"]),
+        "triggers": [] if signals is None else list(signals["triggers"]),
+        "thresholds": {
+            "cost_mape": RETRAIN_DRIFT_THRESHOLD,
+            "delay_mae_days": RETRAIN_DELAY_MAE_DAYS,
+            "hard_miss_rate": RETRAIN_HARD_MISS_RATE,
+            "outcome_brier": RETRAIN_OUTCOME_BRIER,
+        },
+    }
+
+
 def average_cost_drift(session) -> float | None:
     signals = outcome_drift_signals(session)
     if signals is None:
