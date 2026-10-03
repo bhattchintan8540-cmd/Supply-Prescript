@@ -86,6 +86,31 @@ class DecisionOut(BaseModel):
     is_resolved: bool
 
 
+class Phase3Thresholds(BaseModel):
+    cost_mape: float
+    delay_mae_days: float
+    hard_miss_rate: float
+    outcome_brier: float
+
+
+class Phase3Status(BaseModel):
+    """Drift signals on resolved decisions. Does not refit the model."""
+
+    total_decisions: int
+    resolved_decisions: int
+    cost_mape: float | None = None
+    delay_mae: float | None = None
+    hard_miss_rate: float | None = None
+    outcome_brier: float | None = None
+    should_retrain: bool
+    triggers: list[str]
+    thresholds: Phase3Thresholds
+
+
+class Phase3RetrainRequest(BaseModel):
+    force: bool = False
+
+
 class OutcomeUpdate(BaseModel):
     actual_cost_usd: float = Field(gt=0)
     actual_delay_days: float = Field(ge=0)
