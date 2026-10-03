@@ -176,7 +176,38 @@ Phase 2 completion checklist:
 
 ---
 
-## Step 9 — Tests
+## Step 9 — Phase 3: close the loop
+
+```bash
+python week4/finish_phase3.py
+```
+
+That uses a throwaway database. It prescribes Air Freight, writes the
+decision, logs an outcome, then reads ROI and drift. It prints
+`WEEK4 PHASE3 COMPLETE OK`. It does not force a model refit.
+
+With the API up:
+
+```bash
+curl http://127.0.0.1:8000/phase3/status
+curl -X POST http://127.0.0.1:8000/phase3/retrain -H "Content-Type: application/json" -d "{\"force\": false}"
+```
+
+The dashboard section **Phase 3 — close the loop** shows the same
+signals. **Refresh** reloads them. **Retrain if drift is high** refits
+only when a signal is over its limit.
+
+Phase 3 completion checklist:
+
+- [ ] `python week4/finish_phase3.py` prints `WEEK4 PHASE3 COMPLETE OK`
+- [ ] `GET /phase3/status` returns the four drift thresholds
+- [ ] `POST /phase3/retrain` with `{"force": false}` returns `retrained`
+- [ ] A resolved outcome without `shipment_features_json` can raise drift and does not become a training row
+- [ ] The dashboard shows resolved decisions, the drift line, Refresh, and Retrain if drift is high
+
+---
+
+## Step 10 — Tests
 
 From the project root:
 
