@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -468,8 +468,8 @@ def phase3_retrain(payload: schemas.Phase3RetrainRequest | None = None) -> dict:
 
 @app.get("/phase2/recommend", response_model=schemas.Phase2RecommendResponse)
 def phase2_recommend(
-    budget: float | None = None,
-    max_delay: float | None = None,
+    budget: float | None = Query(default=None, gt=0),
+    max_delay: float | None = Query(default=None, ge=0),
 ) -> schemas.Phase2RecommendResponse:
     """Phase 2 midpoint: cheapest pure option at a budget/delay cell.
 
@@ -485,6 +485,8 @@ def phase2_recommend(
             winner_label=row["winner_label"],
             winner_cost_usd=row["winner_cost_usd"],
             milp_feasible=row["milp_feasible"],
+            milp_budget_relaxed=bool(row.get("milp_budget_relaxed")),
+            milp_within_budget=bool(row.get("milp_within_budget")),
         )
         for row in result["grid"]
     ]
@@ -512,6 +514,8 @@ def phase2_grid() -> schemas.Phase2GridResponse:
             winner_label=row["winner_label"],
             winner_cost_usd=row["winner_cost_usd"],
             milp_feasible=row["milp_feasible"],
+            milp_budget_relaxed=bool(row.get("milp_budget_relaxed")),
+            milp_within_budget=bool(row.get("milp_within_budget")),
         )
         for row in rows
     ]

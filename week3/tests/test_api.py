@@ -261,6 +261,7 @@ def test_phase3_status_exposes_drift_thresholds(client):
 
 
 def test_phase2_draft_decision_is_preview_only(client):
+    before = len(client.get("/decisions").json())
     resp = client.post("/phase2/draft-decision", json={})
     assert resp.status_code == 200
     body = resp.json()
@@ -268,7 +269,7 @@ def test_phase2_draft_decision_is_preview_only(client):
     assert body["shipment_sku"] == "MICROCHIP-A2"
     assert body["budget_cap_usd"] == 100_000
     assert body["max_acceptable_delay_days"] == 5
-    assert client.get("/decisions").json() == []
+    assert len(client.get("/decisions").json()) == before
 
     overridden = client.post(
         "/phase2/draft-decision",
@@ -279,4 +280,11 @@ def test_phase2_draft_decision_is_preview_only(client):
     assert preview["budget_cap_usd"] == 120_000
     assert preview["max_acceptable_delay_days"] == 8
     assert preview["persisted"] is False
-    assert client.get("/decisions").json() == []
+    assert len(client.get("/decisions").json()) == before
+
+
+def test_phase2_rejects_non_positive_operating_point(client):
+    recommend = client.get("/phase2/recommend", params={"budget": 0, "max_delay": -1})
+    assert recommend.status_code == 422
+    draft = client.post("/phase2/draft-decision", json={"budget": -5, "max_delay": -1})
+    assert draft.status_code == 422

@@ -206,6 +206,9 @@ class Phase2GridCell(BaseModel):
     winner_label: str | None = None
     winner_cost_usd: float | None = None
     milp_feasible: bool
+    # True when CBC only found a mix after dropping the budget cap.
+    milp_budget_relaxed: bool = False
+    milp_within_budget: bool = False
 
 
 class Phase2RecommendResponse(BaseModel):
@@ -233,8 +236,8 @@ class Phase2GridResponse(BaseModel):
 class Phase2DraftRequest(BaseModel):
     """Optional operating point for a preview. Omitted fields use the demo cell."""
 
-    budget: float | None = None
-    max_delay: float | None = None
+    budget: float | None = Field(default=None, gt=0)
+    max_delay: float | None = Field(default=None, ge=0)
 
 
 class Phase2DraftResponse(BaseModel):
