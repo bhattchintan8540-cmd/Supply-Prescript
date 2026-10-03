@@ -11,6 +11,7 @@ resolved decisions exist.
   delay label.
 
 ```bash
+python week4/finish_phase3.py      # prescribe → write-back → outcome → ROI → drift
 python week4/retrain.py            # retrains only if drift is over threshold
 python week4/retrain.py --force    # retrains unconditionally
 ```
