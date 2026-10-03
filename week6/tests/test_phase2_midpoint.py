@@ -61,3 +61,16 @@ def test_tight_budget_can_leave_no_feasible_pure_option():
     assert row["winner_label"] is None
     assert row["winner_cost_usd"] is None
     assert all(not (opt["within_budget"] and opt["within_sla"]) for opt in row["options"])
+    assert "milp_budget_relaxed" in row
+    assert "milp_within_budget" in row
+
+
+def test_eighty_thousand_cells_do_not_hide_a_relaxed_budget():
+    """$80k is below every pure option. A feasible MILP must say if the cap was dropped."""
+    rows = [row for row in sweep_phase2() if row["budget_cap_usd"] == 80_000]
+    assert rows
+    assert all(row["winner_label"] is None for row in rows)
+    for row in rows:
+        if row["milp_feasible"]:
+            assert row["milp_budget_relaxed"] is True
+            assert row["milp_within_budget"] is False

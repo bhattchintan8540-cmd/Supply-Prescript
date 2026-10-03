@@ -72,6 +72,8 @@ def evaluate_point(budget_cap_usd: float, max_acceptable_delay_days: float) -> d
         "winner_cost_usd": None if winner is None else winner["cost_usd"],
         "milp_status": blend.get("status"),
         "milp_feasible": not bool(blend.get("infeasible")),
+        "milp_budget_relaxed": bool(blend.get("budget_relaxed")),
+        "milp_within_budget": bool(blend.get("within_budget")),
     }
 
 
@@ -132,7 +134,12 @@ def format_report(rows: list[dict]) -> str:
     for row in rows:
         cost = "—" if row["winner_cost_usd"] is None else f"${row['winner_cost_usd']:,.2f}"
         winner = row["winner_label"] or "(none feasible)"
-        milp = "feasible" if row["milp_feasible"] else "infeasible"
+        if not row["milp_feasible"]:
+            milp = "infeasible"
+        elif row.get("milp_budget_relaxed"):
+            milp = "budget relaxed"
+        else:
+            milp = "feasible"
         lines.append(
             f"${row['budget_cap_usd']:>10,.0f}  "
             f"{row['max_acceptable_delay_days']:>8.0f}d  "
@@ -151,6 +158,8 @@ def export_grid_csv(rows: list[dict], path: Path = GRID_CSV_PATH) -> Path:
         "winner_cost_usd",
         "milp_status",
         "milp_feasible",
+        "milp_budget_relaxed",
+        "milp_within_budget",
     ]
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
