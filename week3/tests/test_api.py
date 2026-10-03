@@ -248,6 +248,18 @@ def test_phase2_grid_endpoint(client):
         assert isinstance(cell["milp_feasible"], bool)
 
 
+def test_phase3_status_exposes_drift_thresholds(client):
+    resp = client.get("/phase3/status")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["thresholds"]["cost_mape"] == 0.15
+    assert body["should_retrain"] is False or isinstance(body["triggers"], list)
+
+    skipped = client.post("/phase3/retrain", json={"force": False})
+    assert skipped.status_code == 200
+    assert "retrained" in skipped.json()
+
+
 def test_phase2_draft_decision_is_preview_only(client):
     resp = client.post("/phase2/draft-decision", json={})
     assert resp.status_code == 200
