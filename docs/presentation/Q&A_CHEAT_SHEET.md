@@ -47,5 +47,8 @@ Auth, richer inventory/MRP inputs, calibrated freight contracts, real alternate-
 ### How far did Phase 2 go?
 Week 6 walks a 3×3 budget × delay grid. Week 7 names the cheapest feasible pure option at $100,000 and 5 days. Week 8 exports those files, smokes the path, and previews a decision with `POST /phase2/draft-decision`. That preview is in memory only — no decision row and no retrain.
 
+### How far did Phase 3 go?
+Phase 3 writes the chosen option back, logs the actual cost and delay, and compares that cost with Delay Launch. `GET /phase3/status` reports cost error, delay MAE, hard-miss rate, and outcome Brier. `POST /phase3/retrain` refits only when one of those signals is over its limit (15% cost error, 3 days, 35% hard-miss, Brier 0.25). Outcomes without a feature snapshot can raise drift but cannot become training rows. `python week4/finish_phase3.py` runs that loop on a throwaway database.
+
 ### Where is the code?
 GitHub repo folders `week1`–`week8`, business docs in `docs/business/`, beginner guide `STEP_BY_STEP.md`.
