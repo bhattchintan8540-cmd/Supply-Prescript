@@ -257,7 +257,7 @@ def build_training_frame(session) -> tuple[pd.DataFrame, dict]:
     return combined, meta
 
 
-def maybe_retrain(force: bool = False) -> dict:
+def maybe_retrain(force: bool = False, reload_api: bool = True) -> dict:
     init_db()
     session = SessionLocal()
     try:
@@ -290,7 +290,7 @@ def maybe_retrain(force: bool = False) -> dict:
         clean["top_features"] = model.feature_importance(top_n=10)
         clean["training_frame"] = frame_meta
         METRICS_PATH.write_text(json.dumps(clean, indent=2))
-        api_reloaded = _reload_running_api()
+        api_reloaded = _reload_running_api() if reload_api else False
 
         return {
             "retrained": True,
