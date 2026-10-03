@@ -437,6 +437,35 @@ def decisions_roi(session: Session = Depends(get_session)):
     )
 
 
+@app.get("/phase3/status", response_model=schemas.Phase3Status)
+def phase3_status(session: Session = Depends(get_session)) -> schemas.Phase3Status:
+    """Drift signals for the closed loop. Does not refit the model."""
+    from week4.retrain import phase3_status as snapshot
+
+    return schemas.Phase3Status(**snapshot(session))
+
+
+@app.post("/phase3/retrain")
+def phase3_retrain(payload: schemas.Phase3RetrainRequest | None = None) -> dict:
+    """Refit only when a drift signal is over its threshold, unless force is set.
+
+    Reloads the in-process model after a successful fit. Does not call this
+    server over HTTP, which would deadlock a single worker.
+    """
+    from week4.retrain import maybe_retrain
+
+    payload = payload or schemas.Phase3RetrainRequest()
+    result = maybe_retrain(force=payload.force, reload_api=False)
+    if result.get("retrained"):
+        clear_model_cache()
+    return {
+        "retrained": result.get("retrained", False),
+        "reason": result.get("reason"),
+        "drift": result.get("drift"),
+        "signals": result.get("signals"),
+    }
+
+
 @app.get("/phase2/recommend", response_model=schemas.Phase2RecommendResponse)
 def phase2_recommend(
     budget: float | None = None,
