@@ -145,9 +145,14 @@ a grid table, `data/phase2_recommendation.json`, then
 ## Step 8 — Week 8: Phase 2 finish
 
 ```bash
-python week8/smoke_phase2.py
-make phase2-export
+python week8/finish_phase2.py
 ```
+
+That command does not need GNU `make`. It exports the grid and the
+recommendation, checks the in-memory draft, and calls the Phase 2 API
+routes. It prints `WEEK8 PHASE2 COMPLETE OK`.
+
+`make phase2-smoke` is the same smoke step when `make` is installed.
 
 With the API up (`make api`):
 
@@ -163,11 +168,11 @@ Phase 2 completion checklist:
 
 - [ ] `python week6/phase2_midpoint.py` writes `data/phase2_grid.csv`
 - [ ] `python week7/recommend.py` writes `data/phase2_recommendation.json`
-- [ ] `make phase2-smoke` prints `WEEK8 PHASE2 FINISH OK`
+- [ ] `python week8/finish_phase2.py` prints `WEEK8 PHASE2 COMPLETE OK`
 - [ ] `GET /phase2/grid` returns nine cells
 - [ ] `GET /phase2/recommend` names the demo-point winner
 - [ ] `POST /phase2/draft-decision` returns `persisted: false` and adds no decision row
-- [ ] Dashboard shows the Phase 2 midpoint badge linking to `/phase2/recommend`
+- [ ] Dashboard shows the Phase 2 budget × delay grid
 
 ---
 
