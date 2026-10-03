@@ -31,7 +31,7 @@ curl -X POST http://127.0.0.1:8000/phase2/draft-decision -H "Content-Type: appli
 
 1. `python week6/phase2_midpoint.py` writes `data/phase2_grid.csv`.
 2. `python week7/recommend.py` writes `data/phase2_recommendation.json`.
-3. `make phase2-smoke` checks export, the demo winner, and `draft_persisted=False`.
+3. `python week8/finish_phase2.py` checks export, the demo winner, the draft, and the API. It does not need `make`.
 4. Optional path overrides: `--csv-out` on week 6 and `--json-out` on week 7.
 5. `week8/sensitivity.py` counts how many grid cells share the winner and the cost spread.
 6. The dashboard badge links to `GET /phase2/recommend`. The draft route never writes a decision.
