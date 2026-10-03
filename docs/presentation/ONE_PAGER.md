@@ -27,6 +27,9 @@ Teams often discover a shipment is late **after** it is already late. Panic expe
 ## Phase 2
 After the closed loop, Phase 2 walks a 3×3 budget × delay grid on the same solver (`week6/`), names the demo-point option (`week7/`), then exports, smokes, and previews a decision in memory (`week8/`). It does not insert a decision or retrain. API: `GET /phase2/grid`, `GET /phase2/recommend`, `POST /phase2/draft-decision`.
 
+## Phase 3
+Phase 3 closes the loop on the dashboard and the API. Execute stores the feature snapshot and the Delay Launch cost. Log outcome, then ROI is actual cost versus that baseline. Drift is four signals, and retrain runs only when one crosses its threshold. Check: `python week4/finish_phase3.py`.
+
 ## Snapshot results (seeded **synthetic** data)
 - **~4,000** shipments with calendar bad-quarter shock  
 - Metrics recover programmed relationships under temporal holdout — always compare to supplier baselines in `/model/info`  
